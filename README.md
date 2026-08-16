@@ -22,11 +22,11 @@ A URL do Static Site continua acessível para quem a conhecer. `robots.txt` e `n
 reduzem indexação, mas não são autenticação.
 
 
-## Alterações da v54
+## Alterações da v55
 - No iPhone/iPad, a geração do PDF não tenta mais forçar um download que o Safari pode abrir em uma aba. O app mostra “PDF pronto” e o botão **Salvar / compartilhar PDF**, usando a folha de compartilhamento nativa quando disponível. Escolha **Salvar em Arquivos** para guardar o PDF.
 - Tipografia pequena das páginas 2, 3 e 4 foi ampliada para melhorar a leitura em telas de celular.
 - O botão **Visualizar PDF** continua disponível separadamente para conferência.
 
 
-## v54 — tipografia física no PDF
+## v55 — tipografia física no PDF
 A tipografia das páginas 2–4 passou a usar tamanhos em `pt` na camada final do CSS, com corpo de texto ampliado para leitura confortável no iPhone e escala mais previsível entre iOS e desktop. O painel operacional continua usando `px`.

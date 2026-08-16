@@ -905,10 +905,13 @@ textarea{min-height:60px;resize:vertical}
    a tipografia do documento usa pt em vez de px para manter uma escala
    física previsível no PDF gerado em iPhone, iPad e desktop.
 */
-#page1,#page2,#detailPage{
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
+#coverPage,#page1,#page2,#detailPage{
+  -webkit-text-size-adjust:none;
+  text-size-adjust:none;
+  font-kerning:normal;
 }
+/* Cabeçalhos: tamanho físico explícito para evitar o "mínimo de fonte" diferente entre navegadores. */
+#page1 .crm,#page2 .crm{font-size:5.2pt;line-height:1;letter-spacing:.01em}
 
 /* Página 2 — resumo financeiro */
 #page1 .kicker{font-size:7pt}
@@ -922,17 +925,17 @@ textarea{min-height:60px;resize:vertical}
 #page1 .break-name{font-size:7.2pt;line-height:1.24}
 #page1 .break-value{font-size:7.3pt}
 #page1 .info{font-size:6pt}
-#page1 .inc-title{font-size:6.5pt}
-#page1 .inc-list li{font-size:6.2pt;line-height:1.34;margin:.55mm 0;padding-left:2mm}
+#page1 .inc-title{font-size:6.7pt}
+#page1 .inc-list li{font-size:6.6pt;line-height:1.34;margin:.55mm 0;padding-left:2mm}
 #page1 .major-label{font-size:7pt;line-height:1.2}
 #page1 .major-value{font-size:13pt}
 #page1 .major-side{font-size:6.6pt;line-height:1.32}
 #page1 .major-text{font-size:7pt;line-height:1.42}
-#page1 .major-caption{font-size:6.5pt;line-height:1.38}
+#page1 .major-caption{font-size:6.7pt;line-height:1.38}
 #page1 .pixlabel{font-size:6.3pt}
 #page1 .pixkey{font-size:7.2pt;line-height:1.3}
-#page1 .pixcompany{font-size:6.2pt;line-height:1.3}
-#page1 .page-footer{font-size:5.6pt;line-height:1.3}
+#page1 .pixcompany{font-size:6.5pt;line-height:1.3}
+#page1 .page-footer{font-size:6pt;line-height:1.3}
 
 /* Página 3 — próximos passos */
 #page2 .kicker{font-size:7pt}
@@ -940,12 +943,12 @@ textarea{min-height:60px;resize:vertical}
 #page2 .step-no{font-size:10pt}
 #page2 .step-kicker{font-size:6.5pt;line-height:1.2}
 #page2 .step-title{font-size:10.2pt;line-height:1.14}
-#page2 .step-text{font-size:7pt;line-height:1.42}
-#page2 .pay-name{font-size:6.8pt;line-height:1.28}
+#page2 .step-text{font-size:7.2pt;line-height:1.42}
+#page2 .pay-name{font-size:7pt;line-height:1.28}
 #page2 .pay-value{font-size:7pt;line-height:1.2}
 #page2 .payment-note strong{font-size:6.3pt;line-height:1.2}
-#page2 .payment-note span{font-size:7pt;line-height:1.42}
-#page2 .page-footer{font-size:5.6pt;line-height:1.3}
+#page2 .payment-note span{font-size:7.2pt;line-height:1.42}
+#page2 .page-footer{font-size:6pt;line-height:1.3}
 
 /* Página 4 — detalhes */
 #detailPage .detail-eyebrow{font-size:6.5pt;line-height:1.2}
@@ -958,7 +961,7 @@ textarea{min-height:60px;resize:vertical}
 #detailPage .structure-title{font-size:6.5pt;line-height:1.2}
 #detailPage .structure-card .dc-kicker{font-size:6pt;line-height:1.22}
 #detailPage .structure-card .dc-text{font-size:6.8pt;line-height:1.44}
-#detailPage .detail-footer{font-size:5.6pt;line-height:1.3}
+#detailPage .detail-footer{font-size:6pt;line-height:1.3}
 
 /* ---------- PRINT ---------- */
 @media print{
@@ -997,6 +1000,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v55</b> • tipografia física sincronizada</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -2186,12 +2190,21 @@ window.addEventListener("load",()=>requestAnimationFrame(()=>requestAnimationFra
 </script>
 
 <script>
-/* PWA: registra cache/offline quando servido por HTTPS/localhost. */
+/* PWA: atualiza o app sem reutilizar uma versão antiga do service worker. */
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch(err => {
-      console.warn("Service Worker não pôde ser registrado:", err);
-    });
+  let reloadedForSW = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloadedForSW) return;
+    reloadedForSW = true;
+    location.reload();
+  });
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("./service-worker.js?v=55", {updateViaCache:"none"});
+      await reg.update();
+    } catch (err) {
+      console.warn("Service Worker não pôde ser registrado/atualizado:", err);
+    }
   });
 }
 </script>
