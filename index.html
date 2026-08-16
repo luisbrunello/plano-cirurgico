@@ -899,43 +899,66 @@ textarea{min-height:60px;resize:vertical}
   font-size:4.35px;
 }
 
-/* ---------- LEGIBILIDADE EM CELULAR / PDF ---------- */
-/* Aumenta apenas os textos pequenos. A estrutura e os cálculos não são alterados. */
-#page1 .kicker{font-size:5.9px}
-#page1 .surgery-date{font-size:5.7px}
-#page1 .hero-label{font-size:6.05px}
-#page1 .hero-sub{font-size:5.95px}
-#page1 .break-name{font-size:6.25px}
-#page1 .break-value{font-size:6.35px}
-#page1 .inc-title{font-size:5.05px}
-#page1 .inc-list li{font-size:4.95px;line-height:1.28}
-#page1 .major-label{font-size:5.8px}
-#page1 .major-side{font-size:5.45px}
-#page1 .major-text{font-size:5.65px;line-height:1.36}
-#page1 .major-caption{font-size:5.25px;line-height:1.32}
-#page1 .pixlabel{font-size:5.1px}
-#page1 .pixcompany{font-size:5.1px}
-#page1 .page-footer{font-size:4.8px}
+/* ---------- TIPOGRAFIA FÍSICA PARA CELULAR / PDF ---------- */
+/*
+   As páginas do documento têm largura fixa de 108 mm. Nesta camada final,
+   a tipografia do documento usa pt em vez de px para manter uma escala
+   física previsível no PDF gerado em iPhone, iPad e desktop.
+*/
+#page1,#page2,#detailPage{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
 
-#page2 .kicker{font-size:5.55px}
-#page2 .step-kicker{font-size:5.25px}
-#page2 .step-title{font-size:10.1px}
-#page2 .step-text{font-size:5.85px;line-height:1.40}
-#page2 .pay-name{font-size:6.05px}
-#page2 .pay-value{font-size:6.25px}
-#page2 .payment-note strong{font-size:5.05px}
-#page2 .payment-note span{font-size:5.7px;line-height:1.38}
-#page2 .page-footer{font-size:4.8px}
+/* Página 2 — resumo financeiro */
+#page1 .kicker{font-size:7pt}
+#page1 .patient-name{font-size:14pt}
+#page1 .procedure{font-size:8pt;line-height:1.25}
+#page1 .surgery-date{font-size:7pt;line-height:1.25}
+#page1 .hero-label{font-size:7.2pt}
+#page1 .hero-number{font-size:18pt}
+#page1 .hero-sub{font-size:7pt}
+#page1 .section-title,#page1 .total-heading{font-size:7pt;line-height:1.22}
+#page1 .break-name{font-size:7.2pt;line-height:1.24}
+#page1 .break-value{font-size:7.3pt}
+#page1 .info{font-size:6pt}
+#page1 .inc-title{font-size:6.5pt}
+#page1 .inc-list li{font-size:6.2pt;line-height:1.34;margin:.55mm 0;padding-left:2mm}
+#page1 .major-label{font-size:7pt;line-height:1.2}
+#page1 .major-value{font-size:13pt}
+#page1 .major-side{font-size:6.6pt;line-height:1.32}
+#page1 .major-text{font-size:7pt;line-height:1.42}
+#page1 .major-caption{font-size:6.5pt;line-height:1.38}
+#page1 .pixlabel{font-size:6.3pt}
+#page1 .pixkey{font-size:7.2pt;line-height:1.3}
+#page1 .pixcompany{font-size:6.2pt;line-height:1.3}
+#page1 .page-footer{font-size:5.6pt;line-height:1.3}
 
-#detailPage .detail-eyebrow{font-size:5.7px}
-#detailPage .detail-explain{font-size:5.95px;line-height:1.38}
-#detailPage .count-chip{font-size:4.85px}
-#detailPage .detail-card .dc-kicker{font-size:5.15px}
-#detailPage .detail-card .dc-text{font-size:5.75px;line-height:1.44}
-#detailPage .structure-title{font-size:5.2px}
-#detailPage .structure-card .dc-kicker{font-size:4.85px}
-#detailPage .structure-card .dc-text{font-size:5.25px;line-height:1.42}
-#detailPage .detail-footer{font-size:4.8px}
+/* Página 3 — próximos passos */
+#page2 .kicker{font-size:7pt}
+#page2 .p2-title{font-size:13.5pt;line-height:1.14}
+#page2 .step-no{font-size:10pt}
+#page2 .step-kicker{font-size:6.5pt;line-height:1.2}
+#page2 .step-title{font-size:10.2pt;line-height:1.14}
+#page2 .step-text{font-size:7pt;line-height:1.42}
+#page2 .pay-name{font-size:6.8pt;line-height:1.28}
+#page2 .pay-value{font-size:7pt;line-height:1.2}
+#page2 .payment-note strong{font-size:6.3pt;line-height:1.2}
+#page2 .payment-note span{font-size:7pt;line-height:1.42}
+#page2 .page-footer{font-size:5.6pt;line-height:1.3}
+
+/* Página 4 — detalhes */
+#detailPage .detail-eyebrow{font-size:6.5pt;line-height:1.2}
+#detailPage .detail-title{font-size:13.5pt;line-height:1.17}
+#detailPage .detail-explain{font-size:7pt;line-height:1.42}
+#detailPage .count-chip{font-size:6pt;line-height:1.2}
+#detailPage .detail-card .dc-kicker{font-size:6.4pt;line-height:1.22}
+#detailPage .detail-card .dc-text{font-size:7.2pt;line-height:1.46}
+#detailPage .back-link{font-size:6.1pt}
+#detailPage .structure-title{font-size:6.5pt;line-height:1.2}
+#detailPage .structure-card .dc-kicker{font-size:6pt;line-height:1.22}
+#detailPage .structure-card .dc-text{font-size:6.8pt;line-height:1.44}
+#detailPage .detail-footer{font-size:5.6pt;line-height:1.3}
 
 /* ---------- PRINT ---------- */
 @media print{
