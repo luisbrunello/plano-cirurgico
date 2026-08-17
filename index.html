@@ -1019,7 +1019,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v58</b> • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v59</b> • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1093,7 +1093,7 @@ textarea{min-height:60px;resize:vertical}
         <div class="box-title">Cálculo automático — Hospital Firenze</div>
         <label class="check"><input id="useFirenzeAuto" type="checkbox" checked><span><b>Usar tabela Firenze 2026 e calcular automaticamente</b></span></label>
         <div class="hint">Regra da tabela: maior valor integral + 50% de cada procedimento adicional, aplicada separadamente ao hospital e à anestesia. Os valores abaixo correspondem às colunas à vista publicadas pelo Firenze. Você pode corrigir qualquer valor manualmente.</div>
-        <div class="hint" style="margin-top:6px"><b>Padrões adotados:</b> lipo de braços = 1h; abdome/dorso/coxas = 3h; Lipo 360 = 4h. Mama redutora e mastopexias usam 4h por padrão quando a tabela oferece 3h e 4h. Tecnologias Argo/Renuvion entram como item adicional da tabela. A consulta pré-anestésica não está discriminada na tabela Firenze; por padrão não há acréscimo automático.</div>
+        <div class="hint" style="margin-top:6px"><b>Padrões adotados:</b> lipo pequena localizada e braços = 1h; abdome/dorso/coxas = 3h; Lipo 360 = 4h. Mama redutora e mastopexias usam 4h por padrão quando a tabela oferece 3h e 4h. Tecnologias Argo/Renuvion entram como item adicional da tabela. A consulta pré-anestésica não está discriminada na tabela Firenze; por padrão não há acréscimo automático.</div>
         <div class="field" style="margin-top:8px"><label class="flabel">Consulta pré-anestésica adicional (Firenze)</label><div class="money"><input id="firenzeConsultFee" type="number" min="0" step="0.01" value="0"></div></div>
         <div id="firenzeRatesWrap" class="pieta-rate-list"></div>
         <button type="button" class="btn ghost" id="firenzeResetBtn" style="margin-top:8px;width:100%">Restaurar valores da tabela Firenze</button>
@@ -1402,10 +1402,10 @@ textarea{min-height:60px;resize:vertical}
 <script>
 const procedures = [
  "Mastopexia com prótese","Mastopexia sem prótese","Mamoplastia de aumento","Mamoplastia redutora",
- "Troca de prótese","Abdominoplastia","Mini-abdominoplastia","Lipoaspiração de abdome",
- "Lipoaspiração de dorso","Lipoaspiração de braços","Lipoaspiração de coxas","Lipo 360",
- "Lipoenxertia glútea","Braquioplastia","Cruroplastia","Blefaroplastia","Otoplastia",
- "Correção de cicatriz/queloide"
+ "Troca de prótese","Abdominoplastia","Abdominoplastia âncora","Abdome reverso","Mini-abdominoplastia",
+ "Lipoaspiração pequena (localizada)","Lipoaspiração de abdome","Lipoaspiração de dorso",
+ "Lipoaspiração de braços","Lipoaspiração de coxas","Lipo 360","Lipoenxertia glútea",
+ "Braquioplastia","Cruroplastia","Blefaroplastia","Otoplastia","Correção de cicatriz/queloide"
 ];
 
 const implants = [
@@ -1537,6 +1537,8 @@ const PIETA_HOSPITAL_2026 = {
   "Mamoplastia Redutora":6823,
   "Troca de prótese de mama":6885,
   "Abdominoplastia (sem lipoaspiração)":7250,
+  "Abdomem em âncora":7540,
+  "Abdomen reverso":7508,
   "Mini - abdome":5945,
   "Lipoaspiração pequena":4264,
   "Lipoaspiração tradicional média":5746,
@@ -1560,6 +1562,8 @@ const PIETA_ANEST_2026 = {
   "Mama redutora":2500,
   "Troca de protese":1600,
   "Abdominoplastia":2300,
+  "Abdomen ancora ou circular (360 graus)":2650,
+  "Abdomen Reverso":2500,
   "Mini abdominoplastia":2200,
   "Lipoescultura pequena (até 1 hora)":1700,
   "Lipoescultura média (1-3 horas)":2300,
@@ -1607,6 +1611,8 @@ function pietaDefaultRate(proc){
   "Mamoplastia redutora":{h:"Mamoplastia Redutora",a:"Mama redutora"},
   "Troca de prótese":{h:"Troca de prótese de mama",a:"Troca de protese"},
   "Abdominoplastia":{h:"Abdominoplastia (sem lipoaspiração)",a:"Abdominoplastia"},
+  "Abdominoplastia âncora":{h:"Abdomem em âncora",a:"Abdomen ancora ou circular (360 graus)"},
+  "Abdome reverso":{h:"Abdomen reverso",a:"Abdomen Reverso"},
   "Mini-abdominoplastia":{h:"Mini - abdome",a:"Mini abdominoplastia"},
   "Braquioplastia":{h:"Braquioplastia",a:"Lifting de braço"},
   "Cruroplastia":{h:"Cirurgia de Coxa interna",a:"Lifting de coxa"},
@@ -1616,7 +1622,7 @@ function pietaDefaultRate(proc){
   const x=exact[proc];
   return {hospital:PIETA_HOSPITAL_2026[x.h],anesthesia:PIETA_ANEST_2026[x.a],source:`Hospital: ${x.h} • Anestesia: ${x.a}`};
  }
- if(proc==="Lipoaspiração de braços") return pietaLipoRate("P");
+ if(proc==="Lipoaspiração pequena (localizada)" || proc==="Lipoaspiração de braços") return pietaLipoRate("P");
  if(proc==="Lipoaspiração de abdome" || proc==="Lipoaspiração de dorso" || proc==="Lipoaspiração de coxas") return pietaLipoRate("M");
  if(proc==="Lipo 360") return pietaLipoRate("G");
  if(proc==="Lipoenxertia glútea"){
@@ -1734,6 +1740,8 @@ function applyPietaAutoPricing(){
 
 /* Hospital Firenze — tabela 2026 (vigência 01/05/2026 a 30/04/2027). Valores à vista publicados na página do hospital. */
 const FIRENZE_TABLE_2026 = {
+  "Abdo Ancora":{hospital:7780,anesthesia:2660},
+  "Abdomen Reverso":{hospital:3740,anesthesia:1500},
   "Abdominoplastia":{hospital:6520,anesthesia:2120},
   "Miniabdomen":{hospital:6200,anesthesia:1960},
   "Masto Prót 3h":{hospital:6020,anesthesia:2020},
@@ -1775,6 +1783,8 @@ function firenzeDefaultRate(proc){
   "Mamoplastia de aumento":"Prótese Mama",
   "Mamoplastia redutora":"Mama Red 4h",
   "Abdominoplastia":"Abdominoplastia",
+  "Abdominoplastia âncora":"Abdo Ancora",
+  "Abdome reverso":"Abdomen Reverso",
   "Mini-abdominoplastia":"Miniabdomen",
   "Braquioplastia":"Braquioplastia",
   "Cruroplastia":"Coxoplastia",
@@ -1785,7 +1795,7 @@ function firenzeDefaultRate(proc){
   const note=["Mastopexia com prótese","Mastopexia sem prótese","Mamoplastia redutora"].includes(proc)?"padrão 4h; a tabela também oferece 3h":"";
   return firenzeTableRate(exact[proc],note);
  }
- if(proc==="Lipoaspiração de braços") return firenzeTableRate("Lipo 1h","padrão por região");
+ if(proc==="Lipoaspiração pequena (localizada)" || proc==="Lipoaspiração de braços") return firenzeTableRate("Lipo 1h","padrão 1h / região localizada");
  if(proc==="Lipoaspiração de abdome" || proc==="Lipoaspiração de dorso" || proc==="Lipoaspiração de coxas") return firenzeTableRate("Lipo 3h","padrão por região");
  if(proc==="Lipo 360") return firenzeTableRate("Lipo 4h","padrão por região");
  if(proc==="Lipoenxertia glútea") return firenzeTableRate("Enxerto Gordura");
