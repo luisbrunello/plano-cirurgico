@@ -1,3 +1,14 @@
+# Plano Cirúrgico PWA — v58
+
+Versão com cálculo automático do Hospital Pietà por procedimento.
+
+## Regra Pietà
+- Hospital: maior valor isolado + 50% de cada procedimento adicional.
+- Anestesista: maior valor isolado + 50% de cada procedimento adicional.
+- Consulta pré-anestésica: R$ 150,00 adicionados ao total do anestesista.
+- Os valores isolados por procedimento ficam salvos localmente no navegador.
+- Para outros hospitais, os campos continuam manuais.
+
 # Plano Cirúrgico — PWA
 
 Pacote pronto para publicar como **Static Site** no Render.
@@ -30,3 +41,12 @@ reduzem indexação, mas não são autenticação.
 
 ## v55 — tipografia física no PDF
 A tipografia das páginas 2–4 passou a usar tamanhos em `pt` na camada final do CSS, com corpo de texto ampliado para leitura confortável no iPhone e escala mais previsível entre iOS e desktop. O painel operacional continua usando `px`.
+
+
+## v58 - Tabelas Pietà 2026
+Valores do Hospital Pietà e honorários anestésicos 2026 integrados ao cálculo automático. Mantém consulta pré-anestésica de R$ 150,00 adicionada uma única vez ao total de anestesia.
+
+
+## Hospital Firenze — v58
+
+A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combinadas: maior valor integral + 50% dos demais, separadamente para hospital e anestesia. Valores ambíguos por duração e procedimentos sem correspondência explícita permanecem editáveis no painel.
