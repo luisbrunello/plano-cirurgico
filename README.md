@@ -1,4 +1,4 @@
-# Plano Cirúrgico PWA — v59
+# Plano Cirúrgico PWA — v60
 
 Versão com cálculo automático do Hospital Pietà por procedimento.
 
@@ -43,10 +43,15 @@ reduzem indexação, mas não são autenticação.
 A tipografia das páginas 2–4 passou a usar tamanhos em `pt` na camada final do CSS, com corpo de texto ampliado para leitura confortável no iPhone e escala mais previsível entre iOS e desktop. O painel operacional continua usando `px`.
 
 
-## v59 - Tabelas Pietà 2026
+## v60 - Tabelas Pietà 2026
 Valores do Hospital Pietà e honorários anestésicos 2026 integrados ao cálculo automático. Mantém consulta pré-anestésica de R$ 150,00 adicionada uma única vez ao total de anestesia.
 
 
-## Hospital Firenze — v59
+## Hospital Firenze — v60
 
 A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combinadas: maior valor integral + 50% dos demais, separadamente para hospital e anestesia. Valores ambíguos por duração e procedimentos sem correspondência explícita permanecem editáveis no painel.
+
+
+## v60
+- Adicionado como primeiro item fixo em “Entenda sua proposta”: **Acompanhamento em consultório**.
+- O item descreve planejamento, retorno pré-operatório, suporte via WhatsApp e cronograma habitual de consultas pós-operatórias, com possibilidade de ajuste individual.

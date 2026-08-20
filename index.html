@@ -1019,7 +1019,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v59</b> • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v60</b> • acompanhamento fixo na proposta • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1436,6 +1436,10 @@ const garments = [
 ];
 
 const detailTexts = {
+ officeFollowUp:{
+  kicker:"Acompanhamento em consultório",title:()=>"Acompanhamento ao longo de todo o tratamento",
+  text:"A equipe do Dr. Luis Brunello estará presente ao longo de todo o tratamento, antes e após a cirurgia. O acompanhamento inclui planejamento individualizado e detalhado do procedimento, retorno pré-operatório, suporte via WhatsApp e consultas pós-operatórias. Em geral, o primeiro retorno ocorre entre 4 e 7 dias após a cirurgia, seguido de avaliações em torno de 15 e 30 dias, 3 meses, 6 meses e 1 ano. Esse cronograma pode ser ajustado conforme a evolução, as necessidades de cada paciente, o tipo de procedimento, a complexidade da cirurgia e a técnica utilizada."
+ },
  implant:{
   kicker:"Prótese mamária",
   title:()=>selectedImplant().name || "Prótese mamária",
@@ -2099,7 +2103,8 @@ function update(){
  document.getElementById("directPayments").innerHTML=pays.map(r=>paymentRow(...r)).join("");
 
  // Dynamic detail cards
- let main=[];
+ // O acompanhamento em consultório é sempre o primeiro item da página de detalhes.
+ let main=["officeFollowUp"];
  if(C.implant.value>0) main.push("implant");
  if(C.tech.value>0) main.push(C.tech.id);
  if(C.glue>0) main.push("glue");
