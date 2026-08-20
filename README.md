@@ -1,4 +1,4 @@
-# Plano Cirúrgico PWA — v60
+# Plano Cirúrgico PWA — v61
 
 Versão com cálculo automático do Hospital Pietà por procedimento.
 
@@ -55,3 +55,11 @@ A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combin
 ## v60
 - Adicionado como primeiro item fixo em “Entenda sua proposta”: **Acompanhamento em consultório**.
 - O item descreve planejamento, retorno pré-operatório, suporte via WhatsApp e cronograma habitual de consultas pós-operatórias, com possibilidade de ajuste individual.
+
+
+## v61 — ordem da página “Entenda sua proposta”
+- Acompanhamento em consultório permanece como primeiro item fixo.
+- “Acompanhamento nutrológico” passou a “Avaliação com médica nutróloga”, identificando a Dra. Giovanna Spagnuolo.
+- Ordem principal: consultório → nutróloga → seguro → prótese → tecnologias → cola → modeladores → tratamento externo.
+- Materiais especiais e correção de cicatriz/queloide continuam preservados quando aplicáveis, após os itens principais.
+- Estrutura do procedimento permanece no bloco inferior.

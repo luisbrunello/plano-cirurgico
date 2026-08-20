@@ -1019,7 +1019,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v60</b> • acompanhamento fixo na proposta • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v61</b> • ordem refinada dos detalhes • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1482,8 +1482,8 @@ const detailTexts = {
   text:"Cirurgia Segura: serviço contratado para oferecer cobertura ou assistência adicional em caso de intercorrências pós-operatórias. As condições e situações contempladas são determinadas pela empresa responsável pelo serviço."
  },
  nutrition:{
-  kicker:"Acompanhamento nutrológico",title:()=>"Preparação clínica e nutricional para a cirurgia",
-  text:"O acompanhamento com médica nutróloga faz parte do seu planejamento pré-operatório e está incluído nos honorários médicos. O objetivo é avaliar e otimizar aspectos clínicos, metabólicos e nutricionais importantes para a preparação para a cirurgia."
+  kicker:"Avaliação com médica nutróloga",title:()=>"Preparação clínica e nutricional para a cirurgia",
+  text:"A avaliação com a médica nutróloga Dra. Giovanna Spagnuolo faz parte do seu planejamento pré-operatório e está incluída nos honorários médicos. O objetivo é avaliar e otimizar aspectos clínicos, metabólicos e nutricionais importantes para a preparação para a cirurgia."
  },
  scar:{
   kicker:"Correção de cicatriz / queloide",title:()=>"Tratamento planejado da cicatriz",
@@ -2102,18 +2102,17 @@ function update(){
  pays.push(["Gestão e documentação",C.docs,null]);
  document.getElementById("directPayments").innerHTML=pays.map(r=>paymentRow(...r)).join("");
 
- // Dynamic detail cards
- // O acompanhamento em consultório é sempre o primeiro item da página de detalhes.
- let main=["officeFollowUp"];
+ // Dynamic detail cards — ordem clínica/comercial definida para a página "Entenda sua proposta".
+ let main=["officeFollowUp","nutrition"];
+ if(C.insurance>0) main.push("insurance");
  if(C.implant.value>0) main.push("implant");
  if(C.tech.value>0) main.push(C.tech.id);
  if(C.glue>0) main.push("glue");
  if(anyGarment()) main.push("garments");
- if(C.special>0) main.push("special");
- if(C.insurance>0) main.push("insurance");
- main.push("nutrition");
- if(procs.some(p=>/cicatriz|queloide/i.test(p))) main.push("scar");
  if(checked("useExternalTreatment")&&document.getElementById("externalDescription").value.trim()) main.push("external");
+ // Itens opcionais preservados do gerador original, sem alterar a ordem relativa solicitada acima.
+ if(C.special>0) main.push("special");
+ if(procs.some(p=>/cicatriz|queloide/i.test(p))) main.push("scar");
 
  const structure=[];
  if(team>0) structure.push("team");
