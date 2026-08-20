@@ -1,4 +1,4 @@
-# Plano Cirúrgico PWA — v61
+# Plano Cirúrgico PWA — v62
 
 Versão com cálculo automático do Hospital Pietà por procedimento.
 
@@ -63,3 +63,10 @@ A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combin
 - Ordem principal: consultório → nutróloga → seguro → prótese → tecnologias → cola → modeladores → tratamento externo.
 - Materiais especiais e correção de cicatriz/queloide continuam preservados quando aplicáveis, após os itens principais.
 - Estrutura do procedimento permanece no bloco inferior.
+
+
+## v62 — entrada configurável e múltiplos procedimentos manuais
+- Entrada/sinal: 20% dos honorários médicos por padrão ou valor fixo definido manualmente.
+- O restante junto ao médico é recalculado automaticamente conforme a entrada selecionada.
+- O resumo jurídico acompanha a forma de cálculo escolhida.
+- A seção de procedimentos permite adicionar múltiplos procedimentos manuais, com remoção individual.
