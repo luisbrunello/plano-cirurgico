@@ -1,4 +1,4 @@
-# Plano Cirúrgico PWA — v62
+# Plano Cirúrgico PWA — v63
 
 Versão com cálculo automático do Hospital Pietà por procedimento.
 
@@ -70,3 +70,10 @@ A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combin
 - O restante junto ao médico é recalculado automaticamente conforme a entrada selecionada.
 - O resumo jurídico acompanha a forma de cálculo escolhida.
 - A seção de procedimentos permite adicionar múltiplos procedimentos manuais, com remoção individual.
+
+
+## v63 — modeladores editáveis e nomenclatura da página 3
+- Os valores unitários dos modeladores pós-operatórios existentes agora podem ser editados diretamente no painel.
+- É possível adicionar modeladores personalizados, com nome, valor unitário, quantidade, subtotal e remoção individual.
+- Modeladores personalizados participam dos cálculos, da proposta e do resumo jurídico quando selecionados.
+- “Pagamento a fornecedores” na página 3 foi alterado para “Pagamento a terceiros”.

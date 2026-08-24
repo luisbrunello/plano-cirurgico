@@ -77,6 +77,14 @@ summary{cursor:pointer;font-size:12.5px;font-weight:850;color:var(--teal)}
 .signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
 @media(max-width:520px){.signal-grid{grid-template-columns:1fr}}
 .grid3{display:grid;grid-template-columns:1fr 88px 88px;gap:7px;align-items:end}
+.garment-row{border-top:1px solid #edf0ef;padding-top:7px;margin-top:7px}
+.garment-row:first-child{border-top:0;padding-top:0;margin-top:0}
+.garment-controls{display:grid;grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);gap:7px;align-items:end;margin-left:24px}
+.custom-garment-list{display:grid;gap:7px;margin-top:8px}
+.custom-garment-row{border:1px dashed #d7dfdd;border-radius:9px;padding:8px;background:#fff}
+.custom-garment-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:end}
+.custom-garment-fields{display:grid;grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);gap:7px;align-items:end;margin-top:6px}
+@media(max-width:520px){.garment-controls,.custom-garment-fields{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);margin-left:0}.custom-garment-head{grid-template-columns:minmax(0,1fr) auto}}
 label.flabel{display:block;margin-bottom:4px;font-size:10.5px;font-weight:750;color:#546265}
 input[type=text],input[type=number],input[type=date],select,textarea{
   width:100%;border:1px solid #ccd7d5;border-radius:8px;background:#fff;color:var(--text);
@@ -1025,7 +1033,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v62</b> • entrada configurável • múltiplos procedimentos manuais • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v63</b> • modeladores com valores editáveis • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1170,6 +1178,9 @@ textarea{min-height:60px;resize:vertical}
       <div class="box">
         <div class="box-title">Modeladores pós-operatórios</div>
         <div id="garmentOptions"></div>
+        <div id="customGarmentsList" class="custom-garment-list"></div>
+        <button class="btn ghost compact" id="addCustomGarmentBtn" type="button" style="margin-top:8px">+ Adicionar modelador</button>
+        <div class="hint" style="margin-top:5px">Os valores unitários dos itens existentes podem ser editados. Use o botão para incluir um modelador adicional quando necessário.</div>
         <div class="field">
           <label class="flabel">Forma de aquisição</label>
           <select id="garmentMode">
@@ -1361,7 +1372,7 @@ textarea{min-height:60px;resize:vertical}
           <div class="step vendor-step">
             <div class="step-no">02</div>
             <div class="step-body">
-              <div class="step-kicker">Pagamento a fornecedores</div>
+              <div class="step-kicker">Pagamento a terceiros</div>
               <div class="step-title">Pagamentos realizados separadamente</div>
               <div class="pay-card" id="directPayments"></div>
               <div class="payment-note">
@@ -1923,16 +1934,47 @@ function applyFirenzeAutoPricing(){
  return {active:true,complete:true,hospitalFinal,anesthesiaFinal};
 }
 
+function baseGarmentUnit(g){
+ const el=document.getElementById("garv_"+g.id);
+ const v=Number(el?.value);
+ return Number.isFinite(v)&&v>=0?v:g.unit;
+}
+function customGarmentRows(){ return [...document.querySelectorAll("#customGarmentsList .custom-garment-row")]; }
 function garmentTotal(){
  if(document.getElementById("garmentMode").value!=="budget") return 0;
- return garments.reduce((sum,g)=>{
+ const base=garments.reduce((sum,g)=>{
   const ck=document.getElementById("gar_"+g.id);
   const q=document.getElementById("garq_"+g.id);
-  return sum + ((ck&&ck.checked)?g.unit*Number(q.value||1):0);
+  return sum + ((ck&&ck.checked)?baseGarmentUnit(g)*Math.max(1,Number(q?.value||1)):0);
  },0);
+ const custom=customGarmentRows().reduce((sum,row)=>{
+  const ck=row.querySelector(".customGarmentCheck");
+  const unit=Math.max(0,Number(row.querySelector(".customGarmentValue")?.value||0));
+  const qty=Math.max(1,Number(row.querySelector(".customGarmentQty")?.value||1));
+  return sum+(ck?.checked?unit*qty:0);
+ },0);
+ return base+custom;
 }
 function anyGarment(){
- return garments.some(g=>document.getElementById("gar_"+g.id)?.checked);
+ return garments.some(g=>document.getElementById("gar_"+g.id)?.checked) || customGarmentRows().some(row=>row.querySelector(".customGarmentCheck")?.checked);
+}
+function addCustomGarmentRow(data={},focus=true){
+ const list=document.getElementById("customGarmentsList"); if(!list)return;
+ const row=document.createElement("div"); row.className="custom-garment-row";
+ row.innerHTML=`<div class="custom-garment-head"><label class="check" style="margin:0"><input class="customGarmentCheck" type="checkbox"><span><b>Item adicional</b></span></label><button class="btn ghost compact customGarmentRemove" type="button">Remover</button></div><div class="field" style="margin:6px 0 0"><label class="flabel">Nome do modelador</label><input class="customGarmentName" type="text" placeholder="Ex.: cinta específica"></div><div class="custom-garment-fields"><div class="field" style="margin:0"><label class="flabel">Valor unitário</label><div class="money"><input class="customGarmentValue" type="number" min="0" step="0.01" placeholder="0,00"></div></div><div class="field" style="margin:0"><label class="flabel">Qtd.</label><input class="customGarmentQty" type="number" min="1" step="1" value="1"></div><div class="field" style="margin:0"><label class="flabel">Subtotal</label><input class="customGarmentSubtotal" type="text" disabled></div></div>`;
+ row.querySelector(".customGarmentCheck").checked=data.checked!==false;
+ row.querySelector(".customGarmentName").value=data.name||"";
+ row.querySelector(".customGarmentValue").value=data.unit??"";
+ row.querySelector(".customGarmentQty").value=data.qty||1;
+ row.querySelector(".customGarmentRemove").addEventListener("click",()=>{row.remove();update();});
+ list.appendChild(row); if(focus)row.querySelector(".customGarmentName").focus(); update();
+}
+function serializeCustomGarments(){
+ return customGarmentRows().map(row=>({checked:!!row.querySelector(".customGarmentCheck")?.checked,name:row.querySelector(".customGarmentName")?.value||"",unit:row.querySelector(".customGarmentValue")?.value||"",qty:row.querySelector(".customGarmentQty")?.value||1}));
+}
+function restoreCustomGarments(items=[]){
+ const list=document.getElementById("customGarmentsList"); if(!list)return; list.innerHTML="";
+ (Array.isArray(items)?items:[]).forEach(item=>addCustomGarmentRow(item,false));
 }
 function specialFinal(){ return checked("useSpecialMaterials") ? num("specialMaterialsBase")*1.25 : 0; }
 
@@ -1974,10 +2016,13 @@ function renderTech(){
 }
 function renderGarments(){
  document.getElementById("garmentOptions").innerHTML=garments.map(g=>`
-  <div class="grid3">
-   <label class="check"><input id="gar_${g.id}" type="checkbox"><span>${esc(g.name)}<br><small>${BRL(g.unit)}/un.</small></span></label>
-   <div class="field"><label class="flabel">Qtd.</label><input id="garq_${g.id}" type="number" min="1" step="1" value="1"></div>
-   <div class="field"><label class="flabel">Subtotal</label><input id="gars_${g.id}" type="text" disabled></div>
+  <div class="garment-row">
+   <label class="check"><input id="gar_${g.id}" type="checkbox"><span>${esc(g.name)}</span></label>
+   <div class="garment-controls">
+    <div class="field" style="margin:0"><label class="flabel">Valor unitário</label><div class="money"><input id="garv_${g.id}" type="number" min="0" step="0.01" value="${g.unit.toFixed(2)}"></div></div>
+    <div class="field" style="margin:0"><label class="flabel">Qtd.</label><input id="garq_${g.id}" type="number" min="1" step="1" value="1"></div>
+    <div class="field" style="margin:0"><label class="flabel">Subtotal</label><input id="gars_${g.id}" type="text" disabled></div>
+   </div>
   </div>`).join("");
 }
 
@@ -2121,8 +2166,14 @@ function update(){
 
  document.getElementById("glueSubtotal").value=BRL(C.glue);
  garments.forEach(g=>{
-  const q=Number(document.getElementById("garq_"+g.id).value||1);
-  document.getElementById("gars_"+g.id).value=BRL(document.getElementById("gar_"+g.id).checked?g.unit*q:0);
+  const q=Math.max(1,Number(document.getElementById("garq_"+g.id).value||1));
+  document.getElementById("gars_"+g.id).value=BRL(document.getElementById("gar_"+g.id).checked?baseGarmentUnit(g)*q:0);
+ });
+ customGarmentRows().forEach(row=>{
+  const unit=Math.max(0,Number(row.querySelector(".customGarmentValue")?.value||0));
+  const qty=Math.max(1,Number(row.querySelector(".customGarmentQty")?.value||1));
+  const selected=!!row.querySelector(".customGarmentCheck")?.checked;
+  const out=row.querySelector(".customGarmentSubtotal"); if(out)out.value=BRL(selected?unit*qty:0);
  });
 
  // Breakdown
@@ -2224,9 +2275,10 @@ function saveDefaults(){
   else if(el.id) data[el.id]=el.value;
  });
  localStorage.setItem("planoCirurgicoV17",JSON.stringify(data));
+ localStorage.setItem("planoCirurgicoCustomGarmentsV1",JSON.stringify(serializeCustomGarments()));
  syncPietaRatesFromDom();
  syncFirenzeRatesFromDom();
- alert("Padrões salvos neste navegador. Ajustes manuais das tabelas Pietà e Firenze também foram salvos.");
+ alert("Padrões salvos neste navegador. Valores/modeladores personalizados e ajustes manuais das tabelas Pietà e Firenze também foram salvos.");
 }
 function loadDefaults(){
  const data=JSON.parse(localStorage.getItem("planoCirurgicoV17")||"null");
@@ -2239,6 +2291,7 @@ function loadDefaults(){
    if(el.type==="checkbox") el.checked=!!v; else el.value=v;
   }
  });
+ try{restoreCustomGarments(JSON.parse(localStorage.getItem("planoCirurgicoCustomGarmentsV1")||"[]"));}catch(e){restoreCustomGarments([]);}
  update();
 }
 function newPatient(){
@@ -2557,10 +2610,17 @@ function parseLegalQuestionnaire(raw){
 }
 function legalValue(v){const s=String(v??"").trim();return s||"Não informado";}
 function selectedGarmentLines(){
- return garments.filter(g=>document.getElementById("gar_"+g.id)?.checked).map(g=>{
+ const base=garments.filter(g=>document.getElementById("gar_"+g.id)?.checked).map(g=>{
   const q=Math.max(1,Number(document.getElementById("garq_"+g.id)?.value||1));
-  return `${g.name} — ${q} un. — ${BRL(g.unit*q)}`;
+  return `${g.name} — ${q} un. — ${BRL(baseGarmentUnit(g)*q)}`;
  });
+ const custom=customGarmentRows().filter(row=>row.querySelector(".customGarmentCheck")?.checked).map(row=>{
+  const name=row.querySelector(".customGarmentName")?.value.trim()||"Modelador adicional";
+  const unit=Math.max(0,Number(row.querySelector(".customGarmentValue")?.value||0));
+  const qty=Math.max(1,Number(row.querySelector(".customGarmentQty")?.value||1));
+  return `${name} — ${qty} un. — ${BRL(unit*qty)}`;
+ });
+ return [...base,...custom];
 }
 function buildLegalSummary(){
  const raw=document.getElementById("legalQuestionnaire").value, parsed=parseLegalQuestionnaire(raw), q=parsed.data, C=calc(), procs=selectedProcedures();
@@ -2626,6 +2686,7 @@ document.getElementById("newBtn").addEventListener("click",newPatient);
 document.getElementById("saveBtn").addEventListener("click",saveDefaults);
 document.getElementById("loadBtn").addEventListener("click",loadDefaults);
 document.getElementById("addOtherProcedureBtn").addEventListener("click",()=>addOtherProcedureInput());
+document.getElementById("addCustomGarmentBtn").addEventListener("click",()=>addCustomGarmentRow());
 document.getElementById("pietaResetBtn").addEventListener("click",resetPietaOverrides);
 document.getElementById("firenzeResetBtn").addEventListener("click",resetFirenzeOverrides);
 document.getElementById("legalExportBtn").addEventListener("click",openLegalExport);
@@ -2655,7 +2716,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   });
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("./service-worker.js?v=56", {updateViaCache:"none"});
+      const reg = await navigator.serviceWorker.register("./service-worker.js?v=63", {updateViaCache:"none"});
       await reg.update();
     } catch (err) {
       console.warn("Service Worker não pôde ser registrado/atualizado:", err);
