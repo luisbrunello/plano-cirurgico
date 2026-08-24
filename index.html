@@ -1033,7 +1033,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v63</b> • modeladores com valores editáveis • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v64</b> • modeladores com valores editáveis • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1133,7 +1133,7 @@ textarea{min-height:60px;resize:vertical}
         <div class="box-title">Cálculo automático — Hospital Firenze</div>
         <label class="check"><input id="useFirenzeAuto" type="checkbox" checked><span><b>Usar tabela Firenze 2026 e calcular automaticamente</b></span></label>
         <div class="hint">Regra da tabela: maior valor integral + 50% de cada procedimento adicional, aplicada separadamente ao hospital e à anestesia. Os valores abaixo correspondem às colunas à vista publicadas pelo Firenze. Você pode corrigir qualquer valor manualmente.</div>
-        <div class="hint" style="margin-top:6px"><b>Padrões adotados:</b> lipo pequena localizada e braços = 1h; abdome/dorso/coxas = 3h; Lipo 360 = 4h. Mama redutora e mastopexias usam 4h por padrão quando a tabela oferece 3h e 4h. Tecnologias Argo/Renuvion entram como item adicional da tabela. A consulta pré-anestésica não está discriminada na tabela Firenze; por padrão não há acréscimo automático.</div>
+        <div class="hint" style="margin-top:6px"><b>Padrões adotados:</b> lipo pequena localizada e braços = 1h; abdome/dorso/coxas = 3h; Lipo 360 = 4h. Mama redutora e mastopexias usam 4h por padrão quando a tabela oferece 3h e 4h. No Firenze, a lipoaspiração já inclui enxerto glúteo e Vaser; Abdominoplastia/Miniabdome já incluem a lipo de frente/abdome prevista pela tabela, evitando dupla cobrança. Tecnologias Argo/Renuvion entram como item adicional. A consulta pré-anestésica não está discriminada na tabela Firenze; por padrão não há acréscimo automático.</div>
         <div class="field" style="margin-top:8px"><label class="flabel">Consulta pré-anestésica adicional (Firenze)</label><div class="money"><input id="firenzeConsultFee" type="number" min="0" step="0.01" value="0"></div></div>
         <div id="firenzeRatesWrap" class="pieta-rate-list"></div>
         <button type="button" class="btn ghost" id="firenzeResetBtn" style="margin-top:8px;width:100%">Restaurar valores da tabela Firenze</button>
@@ -1775,8 +1775,16 @@ function applyPietaAutoPricing(){
   if(status){status.className="pieta-status";status.textContent="Cálculo automático desativado. Os valores de hospital e anestesia podem ser preenchidos manualmente.";}
   return {active:false,complete:true};
  }
+ // Em modo automático, os campos finais são sempre derivados das linhas abaixo.
+ // Se o cálculo estiver incompleto, são zerados para impedir reaproveitamento silencioso de um total antigo.
+ const setPending=()=>{
+  hospitalEl.value=""; anesthesiaEl.value="";
+  hospitalEl.readOnly=true; anesthesiaEl.readOnly=true;
+  hospitalEl.classList.add("pieta-readonly"); anesthesiaEl.classList.add("pieta-readonly");
+ };
  const procs=selectedProcedures();
  if(!procs.length){
+  setPending();
   if(status){status.className="pieta-status warn";status.textContent="Selecione ao menos um procedimento.";}
   return {active:true,complete:false};
  }
@@ -1787,6 +1795,7 @@ function applyPietaAutoPricing(){
   else {h.push(Number(r.hospital)||0);a.push(Number(r.anesthesia)||0);}
  });
  if(missing.length){
+  setPending();
   if(status){status.className="pieta-status warn";status.textContent=`Falta correspondência/valor de hospital ou anestesia para: ${missing.join(", ")}. Preencha manualmente os campos desta linha para concluir o cálculo.`;}
   return {active:true,complete:false};
  }
@@ -1843,6 +1852,14 @@ function firenzeTableRate(key,sourceExtra=""){
  if(!x) return {hospital:"",anesthesia:"",source:`Sem correspondência automática${sourceExtra?" • "+sourceExtra:""}. Informe manualmente.`};
  return {hospital:x.hospital,anesthesia:x.anesthesia,source:`Tabela Firenze: ${key}${sourceExtra?" • "+sourceExtra:""}`};
 }
+function firenzeAbdomenFrontLipoIncluded(proc){
+ if(proc!=="Lipoaspiração de abdome") return false;
+ const procs=selectedProcedures();
+ return procs.includes("Abdominoplastia") || procs.includes("Mini-abdominoplastia");
+}
+function firenzeHasChargeableLipo(){
+ return selectedProcedures().some(proc=>/Lipoaspiração|Lipo 360/i.test(proc) && !firenzeAbdomenFrontLipoIncluded(proc));
+}
 function firenzeDefaultRate(proc){
  const exact={
   "Mastopexia com prótese":"Masto Prót 4h",
@@ -1863,9 +1880,13 @@ function firenzeDefaultRate(proc){
   return firenzeTableRate(exact[proc],note);
  }
  if(proc==="Lipoaspiração pequena (localizada)" || proc==="Lipoaspiração de braços") return firenzeTableRate("Lipo 1h","padrão 1h / região localizada");
+ if(proc==="Lipoaspiração de abdome" && firenzeAbdomenFrontLipoIncluded(proc)) return {hospital:0,anesthesia:0,source:"Incluída na Abdominoplastia/Miniabdome conforme regra do Firenze (lipo de frente/abdome, dentro do tempo previsto)."};
  if(proc==="Lipoaspiração de abdome" || proc==="Lipoaspiração de dorso" || proc==="Lipoaspiração de coxas") return firenzeTableRate("Lipo 3h","padrão por região");
  if(proc==="Lipo 360") return firenzeTableRate("Lipo 4h","padrão por região");
- if(proc==="Lipoenxertia glútea") return firenzeTableRate("Enxerto Gordura");
+ if(proc==="Lipoenxertia glútea"){
+  if(firenzeHasChargeableLipo()) return {hospital:0,anesthesia:0,source:"Incluída na lipoaspiração selecionada conforme regra do Firenze (enxerto glúteo incluído)."};
+  return firenzeTableRate("Enxerto Gordura","sem outra lipo cobrada no planejamento");
+ }
  if(proc==="Correção de cicatriz/queloide") return {hospital:"",anesthesia:"",source:"A tabela Firenze varia conforme o tamanho da cicatriz (até 15 cm, 15–30 cm ou >30 cm). Informe o valor adequado manualmente."};
  if(proc==="Troca de prótese") return {hospital:"",anesthesia:"",source:"A tabela Firenze publicada não traz uma linha explícita de troca de prótese. Informe manualmente."};
  return {hospital:"",anesthesia:"",source:"Sem correspondência automática na tabela Firenze. Informe manualmente."};
@@ -1925,9 +1946,10 @@ function applyFirenzeAutoPricing(){
  if(!isFirenze){if(status)status.textContent="";return {active:false,complete:true};}
  hospitalEl.readOnly=false;anesthesiaEl.readOnly=false;hospitalEl.classList.remove("pieta-readonly");anesthesiaEl.classList.remove("pieta-readonly");
  if(!auto){if(status){status.className="pieta-status";status.textContent="Cálculo automático desativado. Os valores podem ser preenchidos manualmente.";}return {active:false,complete:true};}
- const items=firenzeRateItems();if(!items.length){if(status){status.className="pieta-status warn";status.textContent="Selecione ao menos um procedimento.";}return {active:true,complete:false};}
+ const setPending=()=>{hospitalEl.value="";anesthesiaEl.value="";hospitalEl.readOnly=true;anesthesiaEl.readOnly=true;hospitalEl.classList.add("pieta-readonly");anesthesiaEl.classList.add("pieta-readonly");};
+ const items=firenzeRateItems();if(!items.length){setPending();if(status){status.className="pieta-status warn";status.textContent="Selecione ao menos um procedimento.";}return {active:true,complete:false};}
  const missing=[],h=[],a=[];items.forEach(item=>{const r=getFirenzeRate(item);if(r.hospital===""||r.anesthesia==="")missing.push(item.name);else{h.push(Number(r.hospital)||0);a.push(Number(r.anesthesia)||0);}});
- if(missing.length){if(status){status.className="pieta-status warn";status.textContent=`Falta correspondência/valor para: ${missing.join(", ")}. Preencha manualmente os campos desta linha para concluir o cálculo.`;}return {active:true,complete:false};}
+ if(missing.length){setPending();if(status){status.className="pieta-status warn";status.textContent=`Falta correspondência/valor para: ${missing.join(", ")}. Preencha manualmente os campos desta linha para concluir o cálculo.`;}return {active:true,complete:false};}
  const hospitalFinal=firenzeCombined(h),anesthesiaBase=firenzeCombined(a),consult=num("firenzeConsultFee"),anesthesiaFinal=anesthesiaBase+consult;
  hospitalEl.value=hospitalFinal.toFixed(2);anesthesiaEl.value=anesthesiaFinal.toFixed(2);hospitalEl.readOnly=true;anesthesiaEl.readOnly=true;hospitalEl.classList.add("pieta-readonly");anesthesiaEl.classList.add("pieta-readonly");
  if(status){status.className="pieta-status ok";status.innerHTML=`Hospital: <b>${BRL(hospitalFinal)}</b> • Anestesia: <b>${BRL(anesthesiaBase)}</b>${consult>0?` + consulta <b>${BRL(consult)}</b> = <b>${BRL(anesthesiaFinal)}</b>`:""}.`;}
@@ -2508,6 +2530,19 @@ function previewGeneratedPdf(){
  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
+function validateAutomaticHospitalPricing(){
+ const hospital=document.getElementById("hospital").value;
+ if(hospital==="Hospital Pietà" && checked("usePietaAuto")){
+  const state=applyPietaAutoPricing();
+  if(!state.complete) return "O cálculo automático do Hospital Pietà está incompleto. Revise os procedimentos/valores destacados antes de gerar a proposta.";
+ }
+ if(hospital==="Hospital Firenze" && checked("useFirenzeAuto")){
+  const state=applyFirenzeAutoPricing();
+  if(!state.complete) return "O cálculo automático do Hospital Firenze está incompleto. Revise os procedimentos/valores destacados antes de gerar a proposta.";
+ }
+ return "";
+}
+
 async function generatePdfDirect(){
  const btn=document.getElementById("printBtn");
  const status=document.getElementById("pdfStatus");
@@ -2517,6 +2552,12 @@ async function generatePdfDirect(){
  status.textContent="Preparando páginas...";
  try{
    update();
+   const pricingError=validateAutomaticHospitalPricing();
+   if(pricingError){
+     status.textContent=pricingError;
+     alert(pricingError);
+     return;
+   }
    updatePageSizes();
    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
    if(document.fonts?.ready) await document.fonts.ready;
@@ -2716,7 +2757,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   });
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("./service-worker.js?v=63", {updateViaCache:"none"});
+      const reg = await navigator.serviceWorker.register("./service-worker.js?v=64", {updateViaCache:"none"});
       await reg.update();
     } catch (err) {
       console.warn("Service Worker não pôde ser registrado/atualizado:", err);
