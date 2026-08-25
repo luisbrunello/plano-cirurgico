@@ -1,106 +1,35 @@
-# Plano Cirúrgico PWA — v68
+# Plano Cirúrgico PWA — v70
 
-Versão com cálculo automático do Hospital Pietà por procedimento.
+Gerador mobile-first de propostas cirúrgicas com histórico em Google Sheets, versões de orçamento, cálculo automático para Hospital Pietà/Firenze e cadastro cadastral discreto de pacientes.
 
-## Regra Pietà
-- Hospital: maior valor isolado + 50% de cada procedimento adicional.
-- Anestesista: maior valor isolado + 50% de cada procedimento adicional.
-- Consulta pré-anestésica: R$ 150,00 adicionados ao total do anestesista.
-- Os valores isolados por procedimento ficam salvos localmente no navegador.
-- Para outros hospitais, os campos continuam manuais.
+## Novidades da v70
 
-# Plano Cirúrgico — PWA
-
-Pacote pronto para publicar como **Static Site** no Render.
+- Cadastro por paciente com 8 campos essenciais: nome, nascimento, CPF, sexo, e-mail, celular, CEP e endereço.
+- Status compacto `x/8` dentro do Histórico.
+- Edição manual do cadastro em **Mais opções**.
+- Importação da exportação completa `.xlsx` do Amigo.
+- O XLSX é lido localmente no navegador; somente pacientes que já possuem orçamento são enviados ao Google Sheets.
+- Vínculo técnico pelo `amigo_id`, com fallback por CPF, nome+nascimento e nome completo exato.
+- Resumo jurídico simplificado: cadastro + planejamento + condições financeiras + itens contratados + controle da proposta.
+- Campos cadastrais ausentes são marcados como `PENDENTE`.
+- O antigo questionário clínico para o jurídico foi removido do fluxo.
 
 ## Estrutura
-- `index.html` — gerador completo (baseado na v51).
-- `manifest.webmanifest` — nome, cores e instalação como web app.
-- `service-worker.js` — cache do app; após o primeiro carregamento online, também tenta manter `html2canvas` em cache para geração de PDF offline.
-- `icons/` — ícones PWA/iPhone criados a partir do símbolo da logo oficial.
-- `robots.txt` — solicita aos mecanismos de busca que não indexem o site.
 
-## Configuração recomendada no Render
-- Service type: `Static Site`
-- Branch: `main`
-- Build Command: `echo "static site"`
-- Publish Directory: `.`
+- `index.html` — aplicativo completo.
+- `manifest.webmanifest` — configuração PWA.
+- `service-worker.js` — cache v70.
+- `google-apps-script/Code.gs` — API do histórico e cadastro.
+- `google-apps-script/appsscript.json` — manifesto de referência do Apps Script.
+- `HISTORICO_GOOGLE_SHEETS_PASSO_A_PASSO.md` — instruções de atualização e uso.
+- `icons/` — ícones do PWA.
+
+## Atualização do Apps Script
+
+A v70 altera o esquema da aba `Pacientes`. Substitua o `Code.gs` e publique uma **nova versão** da implantação existente. A URL `/exec` e o token podem permanecer os mesmos.
+
+As novas colunas são acrescentadas automaticamente ao final da aba `Pacientes`; os registros e propostas existentes são preservados.
 
 ## Privacidade
-O PWA continua sendo um site estático no Render, mas o **histórico opcional** usa Google Sheets como armazenamento e Google Apps Script como API intermediária.
-O snapshot enviado ao histórico contém os dados necessários para reconstruir a proposta; o campo do questionário clínico/jurídico permanece excluído do histórico e de “Salvar padrões”.
-A URL e o token do Apps Script são configurados localmente em cada navegador e o token não deve ser colocado no GitHub.
-A URL do Static Site continua acessível para quem a conhecer. `robots.txt` e `noindex` reduzem indexação, mas não são autenticação. O token protege a API do histórico, não o acesso visual ao PWA.
 
-
-## Alterações da v55
-- No iPhone/iPad, a geração do PDF não tenta mais forçar um download que o Safari pode abrir em uma aba. O app mostra “PDF pronto” e o botão **Salvar / compartilhar PDF**, usando a folha de compartilhamento nativa quando disponível. Escolha **Salvar em Arquivos** para guardar o PDF.
-- Tipografia pequena das páginas 2, 3 e 4 foi ampliada para melhorar a leitura em telas de celular.
-- O botão **Visualizar PDF** continua disponível separadamente para conferência.
-
-
-## v55 — tipografia física no PDF
-A tipografia das páginas 2–4 passou a usar tamanhos em `pt` na camada final do CSS, com corpo de texto ampliado para leitura confortável no iPhone e escala mais previsível entre iOS e desktop. O painel operacional continua usando `px`.
-
-
-## v60 - Tabelas Pietà 2026
-Valores do Hospital Pietà e honorários anestésicos 2026 integrados ao cálculo automático. Mantém consulta pré-anestésica de R$ 150,00 adicionada uma única vez ao total de anestesia.
-
-
-## Hospital Firenze — v60
-
-A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combinadas: maior valor integral + 50% dos demais, separadamente para hospital e anestesia. Valores ambíguos por duração e procedimentos sem correspondência explícita permanecem editáveis no painel.
-
-
-## v60
-- Adicionado como primeiro item fixo em “Entenda sua proposta”: **Acompanhamento em consultório**.
-- O item descreve planejamento, retorno pré-operatório, suporte via WhatsApp e cronograma habitual de consultas pós-operatórias, com possibilidade de ajuste individual.
-
-
-## v61 — ordem da página “Entenda sua proposta”
-- Acompanhamento em consultório permanece como primeiro item fixo.
-- “Acompanhamento nutrológico” passou a “Avaliação com médica nutróloga”, identificando a Dra. Giovanna Spagnuolo.
-- Ordem principal: consultório → nutróloga → seguro → prótese → tecnologias → cola → modeladores → tratamento externo.
-- Materiais especiais e correção de cicatriz/queloide continuam preservados quando aplicáveis, após os itens principais.
-- Estrutura do procedimento permanece no bloco inferior.
-
-
-## v62 — entrada configurável e múltiplos procedimentos manuais
-- Entrada/sinal: 20% dos honorários médicos por padrão ou valor fixo definido manualmente.
-- O restante junto ao médico é recalculado automaticamente conforme a entrada selecionada.
-- O resumo jurídico acompanha a forma de cálculo escolhida.
-- A seção de procedimentos permite adicionar múltiplos procedimentos manuais, com remoção individual.
-
-
-## v63 — modeladores editáveis e nomenclatura da página 3
-- Os valores unitários dos modeladores pós-operatórios existentes agora podem ser editados diretamente no painel.
-- É possível adicionar modeladores personalizados, com nome, valor unitário, quantidade, subtotal e remoção individual.
-- Modeladores personalizados participam dos cálculos, da proposta e do resumo jurídico quando selecionados.
-- “Pagamento a fornecedores” na página 3 foi alterado para “Pagamento a terceiros”.
-
-
-## v67 — auditoria financeira e correções de segurança
-- Quando o cálculo automático de Pietà ou Firenze fica incompleto, os totais de hospital/anestesia são limpos e bloqueados, evitando reaproveitamento silencioso de valores antigos.
-- A geração do PDF é bloqueada enquanto um cálculo automático de hospital estiver incompleto.
-- Firenze: lipoenxertia glútea passa a custo hospitalar/anestésico adicional zero quando há uma lipoaspiração efetivamente cobrada, conforme a regra publicada de que o enxerto glúteo está incluído na lipoaspiração.
-- Firenze: Lipoaspiração de abdome não é cobrada novamente quando combinada com Abdominoplastia ou Mini-abdominoplastia, pois a tabela inclui lipo de frente/abdome dentro do tempo previsto.
-
-
-## Histórico Google Sheets (v67)
-Esta versão adiciona o painel de histórico. A conexão fica desativada até configurar o Web App do Google Apps Script.
-Veja `HISTORICO_GOOGLE_SHEETS_PASSO_A_PASSO.md` e a pasta `google-apps-script/`.
-
-O questionário clínico usado no resumo jurídico NÃO é incluído no snapshot enviado ao histórico.
-
-
-## v68 — auditoria final de código, histórico e cálculos
-- Corrigido o registro do Service Worker para a mesma versão do app/cache.
-- Remoção de procedimentos e modeladores adicionais agora marca corretamente a proposta como alterada.
-- Botões do histórico ficam realmente bloqueados durante operações assíncronas, reduzindo risco de versões duplicadas por duplo toque.
-- Histórico passa a preservar também valores calculados de prótese, tecnologia, cola, materiais especiais, gestão/documentação e sinal; alterar um campo relacionado libera apenas o componente correspondente para recálculo.
-- Arquivamento recebeu a mesma proteção contra conflito entre Mac/iPhone já usada na sobrescrita.
-- O Apps Script não sobrescreve mais cabeçalhos de uma planilha com dados se detectar estrutura inesperada; ele interrompe com aviso para evitar desalinhamento de colunas.
-- Entradas numéricas respeitam seus mínimos e valores monetários são protegidos contra números negativos.
-- PDF e histórico validam nome, procedimento e seleção de prótese/tecnologia antes de salvar.
-- No Firenze sem consulta adicional, a proposta e o resumo jurídico exibem apenas “Anestesista/Anestesia”.
-- “Salvar padrões” não armazena mais nome, datas ou outros campos específicos da paciente; dados antigos desses campos também são ignorados ao carregar padrões.
+O Google Sheets guarda apenas o histórico comercial/orçamentário e os 8 dados cadastrais definidos para documentação. O aplicativo não importa o restante das informações clínicas presentes na exportação do Amigo.

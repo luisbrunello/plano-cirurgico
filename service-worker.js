@@ -1,4 +1,4 @@
-const CACHE_NAME = "plano-cirurgico-v68";
+const CACHE_NAME = "plano-cirurgico-v70";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -43,11 +43,11 @@ self.addEventListener("fetch", event => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  const isHtml2Canvas =
+  const isExternalLibrary =
     (url.hostname === "cdn.jsdelivr.net" || url.hostname === "cdnjs.cloudflare.com") &&
-    url.pathname.toLowerCase().includes("html2canvas");
+    (url.pathname.toLowerCase().includes("html2canvas") || url.pathname.toLowerCase().includes("xlsx"));
 
-  if (isHtml2Canvas) {
+  if (isExternalLibrary) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
         try {

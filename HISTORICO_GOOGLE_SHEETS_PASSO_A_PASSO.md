@@ -1,157 +1,118 @@
-# Histórico de propostas — Google Sheets + Apps Script
+# Histórico de propostas + cadastro de pacientes — Google Sheets / Apps Script
 
-Esta pasta deixa a versão v68 praticamente pronta. O gerador continua hospedado no Render. O Google Sheets funciona como banco de dados e o Apps Script como API intermediária.
+A v70 mantém o gerador hospedado no Render e usa o Google Sheets como banco de dados do histórico. O Apps Script funciona como API intermediária.
 
-## O que é salvo
+## Estrutura do banco
 
-- nome da paciente;
-- datas do orçamento e da cirurgia;
+A planilha usa duas abas:
+
+- `Pacientes`: um cadastro por paciente.
+- `Propostas`: uma ou mais versões de orçamento vinculadas à paciente.
+
+Na aba `Pacientes`, além dos campos técnicos, a v70 armazena somente os dados cadastrais definidos para documentos:
+
+1. Nome completo
+2. Data de nascimento
+3. CPF
+4. Sexo
+5. E-mail
+6. Celular
+7. CEP
+8. Endereço
+
+Também é guardado, de forma técnica, o `amigo_id` para reconhecer a mesma paciente nas próximas importações.
+
+## Atualização de uma instalação existente
+
+Se o histórico da v69 já está funcionando:
+
+1. Substitua os arquivos do PWA no GitHub/Render pela v70.
+2. No Google Apps Script, substitua todo o conteúdo de `Code.gs` pelo arquivo da v70.
+3. Salve.
+4. Vá em **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**.
+5. A URL `/exec` e o token podem permanecer os mesmos.
+
+A v70 migra automaticamente a aba `Pacientes`, acrescentando as novas colunas cadastrais ao final. Não apague nem reordene os cabeçalhos existentes.
+
+Opcionalmente, execute `setupHistoryDatabase()` novamente uma vez após a atualização para reaplicar a formatação da planilha. O token existente não é resetado.
+
+## Cadastro manual
+
+No gerador:
+
+1. Selecione uma paciente do histórico.
+2. A linha **Cadastro da paciente** mostra `x/8` ou `8/8 ✓`.
+3. Toque nessa linha ou abra **Mais opções → Cadastro da paciente**.
+4. Edite os campos necessários e clique **Salvar cadastro**.
+
+O cadastro é único por paciente e vale para todas as versões de proposta dessa paciente.
+
+## Atualizar cadastros pelo Amigo (.xlsx)
+
+1. No Amigo, exporte a planilha completa de pacientes em `.xlsx`.
+2. No gerador: **Histórico → Mais opções → Atualizar cadastros pelo Amigo (.xlsx)**.
+3. Selecione o arquivo exportado.
+
+O arquivo é lido no próprio navegador. O aplicativo procura correspondências apenas entre pacientes que já possuem pelo menos uma proposta cadastrada no histórico. Pacientes sem qualquer orçamento são ignorados.
+
+A prioridade de identificação é:
+
+1. `amigo_id` já vinculado;
+2. CPF;
+3. nome + data de nascimento;
+4. nome completo exato e único.
+
+Pacientes do XLSX que não possuem orçamento no gerador são ignorados e não são enviados ao Google Sheets.
+
+Os campos importados são:
+
+- Nome
+- Data de nascimento
+- CPF
+- Sexo
+- E-mail
+- Celular
+- CEP
+- Endereço
+
+O endereço é montado a partir de endereço, número, complemento, bairro, cidade e estado da exportação do Amigo.
+
+Ao final o aplicativo informa quantos cadastros foram atualizados, quantos já estavam iguais, quantos registros do XLSX não foram usados e se houve correspondências ambíguas.
+
+## Exportação para o jurídico
+
+O botão **Exportar resumo para jurídico** não usa mais questionário clínico.
+
+O resumo reúne automaticamente:
+
+- os 8 campos cadastrais;
 - procedimentos;
 - hospital;
-- valores e condições financeiras;
-- todas as opções necessárias para reconstruir a proposta;
-- versão do aplicativo;
-- snapshot completo da proposta.
+- data prevista da cirurgia;
+- condições financeiras;
+- pagamentos a terceiros;
+- prótese, tecnologias, cola, modeladores e seguro;
+- data e versão da proposta.
 
-**Não é salvo:** o conteúdo do campo de questionário clínico/jurídico.
+Campos cadastrais ausentes aparecem como `PENDENTE`.
 
-## 1. Criar a planilha
+O documento termina com a observação de que se destina à elaboração do contrato e termos relacionados ao procedimento e não constitui prontuário ou anamnese.
 
-1. No Google Drive, crie uma planilha em branco.
-2. Sugestão de nome: `Histórico - Planos Cirúrgicos`.
-3. Não precisa criar abas ou colunas manualmente.
+## Segurança e privacidade
 
-## 2. Abrir o Apps Script
+- O arquivo XLSX do Amigo é processado no navegador; o arquivo completo não é enviado ao Apps Script.
+- Somente os cadastros que correspondem a pacientes com orçamento são enviados à planilha.
+- Mantenha a planilha privada.
+- Não coloque o `API_TOKEN` no GitHub ou no `index.html`.
+- URL e token continuam armazenados apenas no navegador de cada aparelho.
 
-1. Dentro da planilha: **Extensões → Apps Script**.
-2. Apague o conteúdo do arquivo `Code.gs` criado automaticamente.
-3. Copie todo o conteúdo de `google-apps-script/Code.gs` deste pacote e cole no editor.
-4. Salve.
+## Teste mínimo recomendado após a atualização
 
-O arquivo `appsscript.json` deste pacote é apenas referência de configuração; para a primeira instalação não é necessário mexer no manifesto manualmente.
-
-## 3. Criar as abas e o token
-
-1. No seletor de funções do Apps Script, escolha `setupHistoryDatabase`.
-2. Clique **Executar**.
-3. Na primeira vez o Google pedirá autorização. Autorize usando a conta proprietária da planilha.
-4. A função criará automaticamente as abas:
-   - `Pacientes`
-   - `Propostas`
-5. Abra **Registro de execução**. Será exibido um `API_TOKEN` longo.
-6. Copie esse token e guarde temporariamente. Ele será colado no aplicativo.
-
-Os pedaços do snapshot ficam em colunas ocultas da aba `Propostas`. Não apague essas colunas.
-
-## 4. Publicar como Web App
-
-1. Apps Script → **Implantar → Nova implantação**.
-2. Tipo: **App da Web**.
-3. Executar como: **Eu**.
-4. Quem pode acessar: **Qualquer pessoa**.
-5. Clique **Implantar**.
-6. Copie a URL terminada em `/exec`.
-
-> O acesso público ao endpoint é protegido adicionalmente pelo token. O token não fica embutido no `index.html`; ele é informado uma vez no seu navegador e fica no localStorage daquele aparelho.
-
-## 5. Configurar o gerador v68
-
-1. Atualize o seu repositório/Render com a pasta `Plano_Cirurgico_PWA_v68`.
-2. Abra o gerador.
-3. No topo, abra **0. Histórico de propostas**.
-4. Abra **Configurar conexão com Google Sheets**.
-5. Cole:
-   - URL do Web App;
-   - API_TOKEN.
-6. Clique **Salvar conexão**.
-7. Clique **Testar conexão**.
-8. O indicador deve mudar para **Conectado**.
-
-Repita somente a configuração de URL/token em cada aparelho/navegador que você quiser usar. Ela não é sincronizada entre Mac e iPhone.
-
-## 6. Uso diário
-
-### Salvar uma paciente/proposta pela primeira vez
-
-1. Monte a proposta normalmente.
-2. Clique **Salvar como nova versão**.
-3. Se o nome ainda não existir, o Apps Script cria a paciente.
-4. A proposta é salva como `v1`.
-
-### Salvar nova versão
-
-1. Abra uma proposta pelo histórico ou mantenha a proposta atual carregada.
-2. Faça as alterações.
-3. Clique **Salvar como nova versão**.
-4. O registro antigo permanece intacto e surge `v2`, `v3` etc.
-
-### Sobrescrever a mesma versão
-
-1. Abra a versão desejada.
-2. Edite.
-3. Clique **Salvar alterações**.
-4. O aplicativo exige confirmação antes de substituir aquele snapshot.
-
-### Abrir versão antiga
-
-1. Selecione a paciente.
-2. Selecione a versão.
-3. Clique **Abrir versão**.
-
-O gerador preserva os valores financeiros calculados gravados naquela versão — incluindo hospital/anestesia e componentes cujo preço fica no código, como prótese, tecnologia, cola, materiais especiais, gestão/documentação e sinal. Isso evita que uma atualização futura de tabelas ou constantes altere silenciosamente um orçamento antigo.
-
-Se quiser aplicar as tabelas hospitalares atuais, clique **Recalcular hospital/anestesia**. Para os demais componentes, alterar o campo correspondente libera apenas aquele item para novo cálculo.
-
-### Arquivar
-
-O botão **Arquivar versão** remove a versão da lista ativa, mas não apaga a linha da planilha.
-
-## 7. Segurança prática
-
-- Não compartilhe o `API_TOKEN`.
-- Não coloque o token no GitHub ou dentro do `index.html`.
-- A planilha deve permanecer privada na sua conta Google.
-- O questionário clínico/jurídico não é enviado para o histórico.
-- Se suspeitar que o token foi exposto, execute `resetApiToken()` no Apps Script e substitua o token nos seus aparelhos.
-- Como o Web App precisa aceitar requisições do PWA hospedado no Render, a implantação é feita como “Qualquer pessoa”; o controle efetivo da API é o token. Para proteção mais forte no futuro, vale adicionar autenticação ao próprio PWA.
-
-## 8. Backup
-
-O Google Sheets já mantém histórico de versões da própria planilha. Além disso, os registros são legíveis nas abas `Pacientes` e `Propostas`.
-
-Sugestão: periodicamente faça **Arquivo → Fazer download → Microsoft Excel (.xlsx)** como cópia externa.
-
-## 9. Se mudar o Code.gs depois
-
-Depois de alterações no Apps Script:
-
-1. **Implantar → Gerenciar implantações**.
-2. Edite a implantação existente.
-3. Crie uma **nova versão**.
-4. Implante.
-
-Normalmente a URL `/exec` permanece a mesma.
-
-## Teste mínimo recomendado
-
-Antes de usar com propostas reais:
-
-1. Paciente `Teste Histórico` → salve v1.
-2. Altere honorários → salve como nova versão → deve aparecer v2.
-3. Abra v1 → o valor original deve voltar.
-4. Edite v1 e use **Salvar alterações** → somente v1 deve mudar.
-5. Arquive v1 → ela deve desaparecer da lista ativa; v2 permanece.
-6. Confira as duas abas diretamente no Google Sheets.
-
-### Observação sobre nome da paciente
-
-Se você abrir uma proposta antiga e apenas corrigir o nome da mesma paciente, use **Salvar alterações**. Se mudar o nome e usar **Salvar como nova versão**, o aplicativo evita anexar automaticamente a nova versão ao cadastro anterior quando o nome não coincide.
-
-
-## Atualização para v68
-
-A v68 mantém e amplia a proteção contra conflitos quando a mesma proposta é usada em mais de um dispositivo, incluindo o arquivamento. Como essa proteção depende do Apps Script, substitua também o conteúdo do `Code.gs` pelo arquivo desta versão e, no Apps Script, abra **Implantar > Gerenciar implantações > Editar**, escolha **Nova versão** e publique novamente. A URL `/exec` da implantação pode permanecer a mesma. Não é necessário alterar a estrutura da planilha.
-
-
-### Importante na atualização para v68
-Substitua também o `Code.gs` e publique **Nova versão** da implantação do Apps Script. A estrutura das abas não muda, a URL `/exec` pode permanecer a mesma e o token atual continua válido.
+1. Confirme que o topo mostra **v70**.
+2. Selecione uma paciente do histórico.
+3. Abra **Cadastro da paciente** e confirme que o status aparece como `1/8` caso exista apenas o nome.
+4. Importe uma exportação do Amigo que contenha essa paciente.
+5. Confirme que o status passa para `8/8 ✓` quando todos os campos estiverem presentes.
+6. Abra o cadastro e confira os valores.
+7. Clique **Exportar resumo para jurídico** e confirme os dados cadastrais e financeiros.
+8. Faça o mesmo no iPhone para confirmar a sincronização via Google Sheets.
