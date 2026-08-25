@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gerador de Plano Cirúrgico — Dr. Luis Brunello</title>
-<meta name="app-build" content="53">
+<meta name="app-build" content="65">
 <style id="dynamicPageStyle"></style>
 <style>
 :root{
@@ -996,6 +996,26 @@ textarea{min-height:60px;resize:vertical}
 .pieta-readonly{background:#f1f4f3!important;color:#586365!important}
 @media(max-width:520px){.pieta-rate-grid{grid-template-columns:1fr}}
 
+
+/* ---------- HISTÓRICO DE PROPOSTAS (GOOGLE SHEETS) ---------- */
+.history-panel{border:1px solid #d8e1de;border-radius:12px;background:#f8faf9;padding:10px;margin:0 0 10px}
+.history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.history-title{font-size:12px;font-weight:800;color:var(--teal)}
+.history-connection{font-size:9.5px;line-height:1.3;padding:4px 7px;border-radius:999px;background:#eee;color:#65706e;white-space:nowrap}
+.history-connection.ok{background:#e8f2ed;color:#335f50}
+.history-connection.warn{background:#fbf1e5;color:#795a36}
+.history-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.history-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.history-actions .btn{width:100%}
+.history-current{margin-top:8px;padding:8px;border:1px solid #dce4e1;border-radius:8px;background:#fff;font-size:10px;line-height:1.4;color:#5f6b69}
+.history-current.dirty{border-color:#d8b88a;background:#fff8ef;color:#6d5234}
+.history-config{margin-top:9px;border-top:1px solid #e1e7e5;padding-top:7px}
+.history-config summary{font-size:10px;font-weight:800;color:#6d7775;cursor:pointer}
+.history-config .field{margin-top:7px}
+.history-config input{font-size:10px}
+.history-error{margin-top:7px;color:#8b3f3f;font-size:10px;line-height:1.4}
+@media(max-width:520px){.history-grid,.history-actions{grid-template-columns:1fr}}
+
 /* ---------- PRINT ---------- */
 @media print{
   html,body{background:#fff}
@@ -1033,7 +1053,7 @@ textarea{min-height:60px;resize:vertical}
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
   <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v64</b> • modeladores com valores editáveis • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v65</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1042,6 +1062,59 @@ textarea{min-height:60px;resize:vertical}
     <button class="btn legal wide" id="legalExportBtn">Exportar resumo para jurídico</button>
   </div>
   <div id="pdfStatus" class="hint" style="min-height:16px;margin:-5px 0 8px"></div>
+
+  <details open id="historyDetails">
+    <summary>0. Histórico de propostas</summary>
+    <div class="fields">
+      <div class="history-panel">
+        <div class="history-head">
+          <div>
+            <div class="history-title">Histórico no Google Sheets</div>
+            <div class="hint" style="margin-top:2px">Salva versões completas da proposta. O questionário clínico/jurídico não é enviado.</div>
+          </div>
+          <div id="historyConnectionBadge" class="history-connection warn">Não configurado</div>
+        </div>
+
+        <div class="field">
+          <label class="flabel">Buscar paciente</label>
+          <input id="historySearch" type="search" placeholder="Digite o nome da paciente">
+        </div>
+        <div class="history-grid">
+          <div class="field" style="margin:0">
+            <label class="flabel">Paciente</label>
+            <select id="historyPatientSelect"><option value="">Selecione</option></select>
+          </div>
+          <div class="field" style="margin:0">
+            <label class="flabel">Versão salva</label>
+            <select id="historyProposalSelect"><option value="">Selecione</option></select>
+          </div>
+        </div>
+
+        <div id="historyCurrent" class="history-current">Nenhuma proposta do histórico carregada.</div>
+        <div id="historyError" class="history-error hidden"></div>
+
+        <div class="history-actions">
+          <button class="btn primary" id="historyNewVersionBtn" type="button">Salvar como nova versão</button>
+          <button class="btn secondary" id="historyOverwriteBtn" type="button" disabled>Salvar alterações</button>
+          <button class="btn ghost" id="historyOpenBtn" type="button">Abrir versão</button>
+          <button class="btn ghost" id="historyRefreshBtn" type="button">Atualizar histórico</button>
+          <button class="btn ghost" id="historyRecalcBtn" type="button">Recalcular hospital/anestesia</button>
+          <button class="btn ghost" id="historyArchiveBtn" type="button" disabled>Arquivar versão</button>
+        </div>
+
+        <details class="history-config" id="historyConfigDetails">
+          <summary>Configurar conexão com Google Sheets</summary>
+          <div class="field"><label class="flabel">URL do Web App (Apps Script)</label><input id="historyApiUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="field"><label class="flabel">Token de acesso</label><input id="historyApiToken" type="password" autocomplete="off" placeholder="Cole o token gerado pelo Apps Script"></div>
+          <div class="history-actions">
+            <button class="btn secondary" id="historySaveConfigBtn" type="button">Salvar conexão</button>
+            <button class="btn ghost" id="historyTestBtn" type="button">Testar conexão</button>
+          </div>
+          <div class="hint" style="margin-top:7px">A URL e o token ficam apenas neste navegador (localStorage) e não entram no PDF, nos padrões ou no histórico.</div>
+        </details>
+      </div>
+    </div>
+  </details>
 
   <details open>
     <summary>1. Paciente e procedimentos</summary>
@@ -1768,6 +1841,12 @@ function applyPietaAutoPricing(){
  const status=document.getElementById("pietaCalcStatus");
  const isPieta=document.getElementById("hospital").value==="Hospital Pietà";
  const auto=isPieta && checked("usePietaAuto");
+ if(isPieta && historyPricingLock && historyPricingLock.hospitalSelection==="Hospital Pietà"){
+  hospitalEl.value=historyPricingLock.hospitalValue;anesthesiaEl.value=historyPricingLock.anesthesia;
+  hospitalEl.readOnly=true;anesthesiaEl.readOnly=true;hospitalEl.classList.add("pieta-readonly");anesthesiaEl.classList.add("pieta-readonly");
+  if(status){status.className="pieta-status ok";status.textContent="Valores preservados da versão carregada do histórico. Use ‘Recalcular hospital/anestesia’ para aplicar as tabelas atuais.";}
+  return {active:true,complete:true,locked:true,hospitalFinal:Number(historyPricingLock.hospitalValue||0),anesthesiaFinal:Number(historyPricingLock.anesthesia||0)};
+ }
  hospitalEl.readOnly=false; anesthesiaEl.readOnly=false;
  hospitalEl.classList.remove("pieta-readonly"); anesthesiaEl.classList.remove("pieta-readonly");
  if(!isPieta){ if(status) status.textContent=""; return {active:false,complete:true}; }
@@ -1943,6 +2022,11 @@ function firenzeCombined(values){
 function applyFirenzeAutoPricing(){
  const hospitalEl=document.getElementById("hospitalValue"),anesthesiaEl=document.getElementById("anesthesia"),status=document.getElementById("firenzeCalcStatus");
  const isFirenze=document.getElementById("hospital").value==="Hospital Firenze",auto=isFirenze&&checked("useFirenzeAuto");
+ if(isFirenze && historyPricingLock && historyPricingLock.hospitalSelection==="Hospital Firenze"){
+  hospitalEl.value=historyPricingLock.hospitalValue;anesthesiaEl.value=historyPricingLock.anesthesia;hospitalEl.readOnly=true;anesthesiaEl.readOnly=true;hospitalEl.classList.add("pieta-readonly");anesthesiaEl.classList.add("pieta-readonly");
+  if(status){status.className="pieta-status ok";status.textContent="Valores preservados da versão carregada do histórico. Use ‘Recalcular hospital/anestesia’ para aplicar a tabela atual.";}
+  return {active:true,complete:true,locked:true,hospitalFinal:Number(historyPricingLock.hospitalValue||0),anesthesiaFinal:Number(historyPricingLock.anesthesia||0)};
+ }
  if(!isFirenze){if(status)status.textContent="";return {active:false,complete:true};}
  hospitalEl.readOnly=false;anesthesiaEl.readOnly=false;hospitalEl.classList.remove("pieta-readonly");anesthesiaEl.classList.remove("pieta-readonly");
  if(!auto){if(status){status.className="pieta-status";status.textContent="Cálculo automático desativado. Os valores podem ser preenchidos manualmente.";}return {active:false,complete:true};}
@@ -2287,10 +2371,244 @@ function updatePageSizes(){
  `;
 }
 
+
+/* ---------- HISTÓRICO GOOGLE SHEETS ---------- */
+const HISTORY_APP_VERSION="v65";
+const HISTORY_CONFIG_KEY="planoCirurgicoHistoryConfigV1";
+const HISTORY_EXCLUDED_IDS=new Set([
+ "legalQuestionnaire","historySearch","historyPatientSelect","historyProposalSelect","historyApiUrl","historyApiToken"
+]);
+let historyPatients=[];
+let historyProposals=[];
+let currentHistory={patientId:"",proposalId:"",version:null,patientName:""};
+let historyDirty=false;
+let historyRestoring=false;
+let historyPricingLock=null;
+
+function historyConfig(){
+ try{return JSON.parse(localStorage.getItem(HISTORY_CONFIG_KEY)||"{}")||{};}catch(e){return {};}
+}
+function saveHistoryConfig(){
+ const url=(document.getElementById("historyApiUrl")?.value||"").trim();
+ const token=(document.getElementById("historyApiToken")?.value||"").trim();
+ if(!url||!token){historyShowError("Informe a URL do Web App e o token.");return;}
+ localStorage.setItem(HISTORY_CONFIG_KEY,JSON.stringify({url,token}));
+ historySetConnection("Configuração salva",true);
+ historyShowError("");
+}
+function loadHistoryConfigToUi(){
+ const c=historyConfig();
+ if(document.getElementById("historyApiUrl"))document.getElementById("historyApiUrl").value=c.url||"";
+ if(document.getElementById("historyApiToken"))document.getElementById("historyApiToken").value=c.token||"";
+ historySetConnection(c.url&&c.token?"Configurado":"Não configurado",!!(c.url&&c.token));
+}
+function historyNormalizeName(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim().replace(/\s+/g," ");}
+function historySetConnection(text,ok=false){
+ const el=document.getElementById("historyConnectionBadge");if(!el)return;
+ el.textContent=text;el.className="history-connection "+(ok?"ok":"warn");
+}
+function historyShowError(msg){
+ const el=document.getElementById("historyError");if(!el)return;
+ el.textContent=msg||"";el.classList.toggle("hidden",!msg);
+}
+function historySetBusy(busy,label="Processando..."){
+ ["historyNewVersionBtn","historyOverwriteBtn","historyOpenBtn","historyRefreshBtn","historyRecalcBtn","historyArchiveBtn","historyTestBtn"].forEach(id=>{
+  const el=document.getElementById(id);if(el)el.dataset.historyBusy=busy?"1":"0";
+ });
+ if(busy)historySetConnection(label,false);
+}
+async function historyApi(action,data={}){
+ const c=historyConfig();
+ if(!c.url||!c.token)throw new Error("Conexão com o Google Sheets ainda não configurada.");
+ let resp;
+ try{
+  resp=await fetch(c.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,token:c.token,...data}),redirect:"follow",cache:"no-store"});
+ }catch(e){throw new Error("Não foi possível alcançar o Apps Script. Verifique a conexão e a URL publicada.");}
+ const text=await resp.text();
+ let json;try{json=JSON.parse(text);}catch(e){throw new Error("Resposta inválida do Apps Script. Confirme se a implantação é do tipo Web App e se a URL termina em /exec.");}
+ if(!json.ok)throw new Error(json.error||"Erro ao acessar o histórico.");
+ return json;
+}
+async function testHistoryConnection(){
+ historyShowError("");
+ try{historySetBusy(true,"Testando...");const r=await historyApi("ping");historySetConnection("Conectado",true);historyShowError("");await refreshHistoryPatients();return r;}
+ catch(e){historySetConnection("Falha na conexão",false);historyShowError(e.message);}
+ finally{historySetBusy(false);historyRefreshButtons();}
+}
+function historyFieldExcluded(el){
+ if(!el||!el.id)return true;
+ if(HISTORY_EXCLUDED_IDS.has(el.id)||el.id.startsWith("history"))return true;
+ if(el.disabled&&/Subtotal$/.test(el.id))return true;
+ return false;
+}
+function buildProposalSnapshot(){
+ const fields={},radios={};
+ document.querySelectorAll(".admin input[id],.admin select[id],.admin textarea[id]").forEach(el=>{
+  if(historyFieldExcluded(el))return;
+  if(el.type==="radio"){if(el.checked)radios[el.name]=el.value;return;}
+  fields[el.id]=el.type==="checkbox"?!!el.checked:el.value;
+ });
+ const C=calc();
+ return {
+  schemaVersion:1,appVersion:HISTORY_APP_VERSION,savedAt:new Date().toISOString(),
+  patient:{name:(document.getElementById("patient").value||"").trim(),coverName:(document.getElementById("coverName").value||"").trim()},
+  fields,radios,
+  procedures:{checked:[...document.querySelectorAll(".procedureCheck:checked")].map(x=>x.value),manual:[...document.querySelectorAll(".otherProcedureInput")].map(x=>x.value.trim()).filter(Boolean)},
+  customGarments:serializeCustomGarments(),
+  computed:{fees:C.fees,assistant:C.assistant,instrument:C.instrument,hospital:C.hospital,anesthesia:C.anesthesia,implant:C.implant,tech:C.tech,glue:C.glue,garmentsTotal:C.garmentsTotal,special:C.special,insurance:C.insurance,docs:C.docs,signal:C.signal,teamPayment:C.teamPayment,teamBalance:C.teamBalance,total:C.total},
+  exactPricing:{hospitalSelection:document.getElementById("hospital").value,hospitalValue:document.getElementById("hospitalValue").value,anesthesia:document.getElementById("anesthesia").value}
+ };
+}
+function restoreManualProcedures(values=[]){
+ const list=document.getElementById("otherProceduresList");
+ list.querySelectorAll(".other-procedure-row.extra").forEach(x=>x.remove());
+ const vals=Array.isArray(values)?values.filter(Boolean):[];
+ document.getElementById("otherProcedure").value=vals[0]||"";
+ vals.slice(1).forEach(v=>{
+  const row=document.createElement("div");row.className="other-procedure-row extra";
+  row.innerHTML=`<input class="otherProcedureInput" type="text" placeholder="Outro procedimento"><button class="btn ghost compact removeOtherProcedureBtn" type="button">Remover</button>`;
+  row.querySelector("input").value=v;
+  row.querySelector("button").addEventListener("click",()=>{row.remove();historyUnlockPricing();markHistoryDirty();update();});
+  list.appendChild(row);
+ });
+}
+function restoreProposalSnapshot(snapshot,meta={}){
+ if(!snapshot||typeof snapshot!=="object")throw new Error("Snapshot da proposta inválido.");
+ historyRestoring=true;
+ try{
+  const fields=snapshot.fields||{};
+  Object.entries(fields).forEach(([id,v])=>{
+   const el=document.getElementById(id);if(!el||id.startsWith("history")||id==="legalQuestionnaire")return;
+   if(el.type==="checkbox")el.checked=!!v;else if(el.type!=="radio")el.value=v??"";
+  });
+  Object.entries(snapshot.radios||{}).forEach(([name,value])=>{
+   document.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`).forEach(x=>x.checked=x.value===value);
+  });
+  document.querySelectorAll(".procedureCheck").forEach(x=>x.checked=(snapshot.procedures?.checked||[]).includes(x.value));
+  restoreManualProcedures(snapshot.procedures?.manual||[]);
+  restoreCustomGarments(snapshot.customGarments||[]);
+  historyPricingLock={
+   hospitalSelection:snapshot.exactPricing?.hospitalSelection||fields.hospital||"",
+   hospitalValue:String(snapshot.exactPricing?.hospitalValue??fields.hospitalValue??""),
+   anesthesia:String(snapshot.exactPricing?.anesthesia??fields.anesthesia??"")
+  };
+  update();
+  // Garante fidelidade física/financeira ao registro histórico, mesmo se a tabela mudar futuramente.
+  if(historyPricingLock){
+   document.getElementById("hospitalValue").value=historyPricingLock.hospitalValue;
+   document.getElementById("anesthesia").value=historyPricingLock.anesthesia;
+  }
+  update();
+  currentHistory={patientId:meta.patientId||"",proposalId:meta.proposalId||"",version:meta.version??null,patientName:meta.patientName||snapshot.patient?.name||""};
+  historyDirty=false;
+  historyRenderCurrent();
+ }finally{historyRestoring=false;}
+}
+function historyUnlockPricing(){historyPricingLock=null;}
+function historyPricingRelevantTarget(t){
+ if(!t)return false;
+ if(t.classList?.contains("procedureCheck")||t.classList?.contains("otherProcedureInput")||t.classList?.contains("pieta-rate-input")||t.classList?.contains("firenze-rate-input"))return true;
+ if(t.name==="tech")return true;
+ return ["hospital","hospitalOther","usePietaAuto","useFirenzeAuto","firenzeConsultFee","useTech"].includes(t.id);
+}
+function markHistoryDirty(){
+ if(historyRestoring)return;
+ historyDirty=true;historyRenderCurrent();
+}
+function historyRenderCurrent(){
+ const el=document.getElementById("historyCurrent");if(!el)return;
+ if(currentHistory.proposalId){
+  const nm=currentHistory.patientName||document.getElementById("patient").value||"Paciente";
+  el.innerHTML=`<b>${esc(nm)}</b> • versão <b>v${currentHistory.version}</b>${historyPricingLock?" • valores hospitalares preservados do histórico":""}${historyDirty?"<br>● Alterações não salvas":"<br>Salva no histórico"}`;
+ }else{
+  el.innerHTML=historyDirty?"Rascunho atual • <b>não salvo no histórico</b>":"Nenhuma proposta do histórico carregada.";
+ }
+ el.classList.toggle("dirty",historyDirty);
+ historyRefreshButtons();
+}
+function historyRefreshButtons(){
+ const configured=!!(historyConfig().url&&historyConfig().token);
+ const hasLoaded=!!currentHistory.proposalId;
+ const selectedProposal=!!document.getElementById("historyProposalSelect")?.value;
+ const set=(id,disabled)=>{const el=document.getElementById(id);if(el)el.disabled=!!disabled;};
+ set("historyNewVersionBtn",!configured);
+ set("historyOverwriteBtn",!configured||!hasLoaded);
+ set("historyOpenBtn",!configured||!selectedProposal);
+ set("historyArchiveBtn",!configured||!hasLoaded);
+ set("historyRefreshBtn",!configured);
+}
+function proposalMetaForApi(snapshot){
+ const C=snapshot.computed||{};
+ return {
+  data_orcamento:snapshot.fields?.budgetDate||"",data_cirurgia:snapshot.fields?.surgeryDate||"",
+  procedimentos:[...(snapshot.procedures?.checked||[]),...(snapshot.procedures?.manual||[])].join(" + "),
+  hospital:snapshot.fields?.hospital==="Outro"?(snapshot.fields?.hospitalOther||"Outro"):snapshot.fields?.hospital||"",
+  total:Number(C.total||0),entrada:Number(C.signal||0),restante_medico:Number(C.teamBalance||0),app_version:HISTORY_APP_VERSION
+ };
+}
+async function refreshHistoryPatients(){
+ if(!(historyConfig().url&&historyConfig().token)){historyRefreshButtons();return;}
+ try{
+  const r=await historyApi("listPatients");historyPatients=r.patients||[];renderHistoryPatients();historySetConnection("Conectado",true);historyShowError("");
+ }catch(e){historyShowError(e.message);historySetConnection("Falha na conexão",false);}
+ finally{historyRefreshButtons();}
+}
+function renderHistoryPatients(){
+ const q=(document.getElementById("historySearch").value||"").trim().toLocaleLowerCase("pt-BR");
+ const sel=document.getElementById("historyPatientSelect"),prev=sel.value;
+ const filtered=historyPatients.filter(p=>!q||String(p.nome||"").toLocaleLowerCase("pt-BR").includes(q));
+ sel.innerHTML='<option value="">Selecione</option>'+filtered.map(p=>`<option value="${esc(p.patient_id)}">${esc(p.nome)}${p.proposal_count?` — ${p.proposal_count} proposta${p.proposal_count===1?"":"s"}`:""}</option>`).join("");
+ if(filtered.some(p=>p.patient_id===prev))sel.value=prev;
+}
+async function loadHistoryProposals(patientId){
+ historyProposals=[];const sel=document.getElementById("historyProposalSelect");sel.innerHTML='<option value="">Selecione</option>';
+ if(!patientId){historyRefreshButtons();return;}
+ try{
+  const r=await historyApi("listProposals",{patientId});historyProposals=r.proposals||[];
+  sel.innerHTML='<option value="">Selecione</option>'+historyProposals.map(p=>`<option value="${esc(p.proposal_id)}">v${p.versao} • ${esc(p.data_orcamento||formatHistoryDate(p.criado_em))} • ${BRL(p.total||0)}</option>`).join("");
+ }catch(e){historyShowError(e.message);}
+ historyRefreshButtons();
+}
+function formatHistoryDate(v){if(!v)return"";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString("pt-BR");}
+async function openSelectedHistoryProposal(){
+ const proposalId=document.getElementById("historyProposalSelect").value;if(!proposalId)return;
+ try{
+  historySetBusy(true,"Abrindo...");const r=await historyApi("getProposal",{proposalId});
+  restoreProposalSnapshot(r.snapshot,{proposalId:r.proposal.proposal_id,patientId:r.proposal.patient_id,version:r.proposal.versao,patientName:r.proposal.patient_name});
+  document.getElementById("historyDetails").open=true;window.scrollTo({top:0,behavior:"smooth"});historySetConnection("Conectado",true);
+ }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
+}
+async function saveHistoryNewVersion(){
+ const snapshot=buildProposalSnapshot();const name=(snapshot.patient?.name||"").trim();if(!name){alert("Informe o nome da paciente antes de salvar no histórico.");return;}
+ try{
+  historySetBusy(true,"Salvando...");
+  const samePatient=currentHistory.patientId && historyNormalizeName(name)===historyNormalizeName(currentHistory.patientName||name);
+  const r=await historyApi("createVersion",{patientId:samePatient?currentHistory.patientId:"",patientName:name,snapshot,meta:proposalMetaForApi(snapshot)});
+  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};
+  historyRenderCurrent();await refreshHistoryPatients();document.getElementById("historyPatientSelect").value=currentHistory.patientId;await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;
+  alert(`Proposta salva como versão v${currentHistory.version}.`);
+ }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
+}
+async function overwriteHistoryProposal(){
+ if(!currentHistory.proposalId)return;
+ if(!confirm(`Substituir a versão v${currentHistory.version} no histórico? A versão anterior não poderá ser recuperada por este botão.`))return;
+ const snapshot=buildProposalSnapshot();
+ try{
+  historySetBusy(true,"Salvando...");const r=await historyApi("overwriteProposal",{proposalId:currentHistory.proposalId,snapshot,meta:proposalMetaForApi(snapshot)});
+  historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyRenderCurrent();await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;alert("Alterações salvas na mesma versão.");
+ }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
+}
+async function archiveHistoryProposal(){
+ if(!currentHistory.proposalId)return;if(!confirm(`Arquivar a versão v${currentHistory.version}? Ela continuará na planilha e poderá ser recuperada manualmente.`))return;
+ try{await historyApi("archiveProposal",{proposalId:currentHistory.proposalId});const pid=currentHistory.patientId;currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName};historyPricingLock=null;historyDirty=false;historyRenderCurrent();await loadHistoryProposals(pid);await refreshHistoryPatients();}
+ catch(e){historyShowError(e.message);}
+}
+function recalcHistoryPricing(){historyUnlockPricing();historyDirty=true;update();historyRenderCurrent();}
+
 function saveDefaults(){
  const data={};
  document.querySelectorAll(".admin input,.admin select,.admin textarea").forEach(el=>{
-  if(el.id==="legalQuestionnaire") return;
+  if(el.id==="legalQuestionnaire" || el.id?.startsWith("history")) return;
   if(el.type==="radio"){
    if(el.checked) data["radio:"+el.name]=el.value;
   }else if(el.type==="checkbox") data[el.id]=el.checked;
@@ -2314,6 +2632,7 @@ function loadDefaults(){
   }
  });
  try{restoreCustomGarments(JSON.parse(localStorage.getItem("planoCirurgicoCustomGarmentsV1")||"[]"));}catch(e){restoreCustomGarments([]);}
+ markHistoryDirty();
  update();
 }
 function newPatient(){
@@ -2324,6 +2643,8 @@ function newPatient(){
  document.querySelectorAll("#otherProceduresList .other-procedure-row.extra").forEach(x=>x.remove());
  document.getElementById("legalQuestionnaire").value="";
  document.querySelectorAll(".procedureCheck").forEach(x=>x.checked=false);
+ currentHistory={patientId:"",proposalId:"",version:null,patientName:""};
+ historyPricingLock=null;historyDirty=false;historyRenderCurrent();
  window.scrollTo({top:0,behavior:"smooth"});
  update();
 }
@@ -2716,8 +3037,18 @@ renderTech();
 renderGarments();
 setToday();
 
-document.addEventListener("input",e=>{if(e.target.closest(".admin")) update()});
-document.addEventListener("change",e=>{if(e.target.closest(".admin")) update()});
+document.addEventListener("input",e=>{
+ if(!e.target.closest(".admin"))return;
+ if(e.target.id?.startsWith("history")){if(e.target.id==="historySearch")renderHistoryPatients();return;}
+ if(historyPricingRelevantTarget(e.target))historyUnlockPricing();
+ markHistoryDirty();update();
+});
+document.addEventListener("change",e=>{
+ if(!e.target.closest(".admin"))return;
+ if(e.target.id?.startsWith("history"))return;
+ if(historyPricingRelevantTarget(e.target))historyUnlockPricing();
+ markHistoryDirty();update();
+});
 document.getElementById("printBtn").addEventListener("click",generatePdfDirect);
 document.getElementById("pdfSaveShareBtn").addEventListener("click",saveOrShareGeneratedPdf);
 document.getElementById("pdfPreviewBtn").addEventListener("click",previewGeneratedPdf);
@@ -2726,10 +3057,21 @@ document.getElementById("pdfReadyModal").addEventListener("click",e=>{if(e.targe
 document.getElementById("newBtn").addEventListener("click",newPatient);
 document.getElementById("saveBtn").addEventListener("click",saveDefaults);
 document.getElementById("loadBtn").addEventListener("click",loadDefaults);
-document.getElementById("addOtherProcedureBtn").addEventListener("click",()=>addOtherProcedureInput());
-document.getElementById("addCustomGarmentBtn").addEventListener("click",()=>addCustomGarmentRow());
+document.getElementById("addOtherProcedureBtn").addEventListener("click",()=>{addOtherProcedureInput();markHistoryDirty();});
+document.getElementById("addCustomGarmentBtn").addEventListener("click",()=>{addCustomGarmentRow();markHistoryDirty();});
 document.getElementById("pietaResetBtn").addEventListener("click",resetPietaOverrides);
 document.getElementById("firenzeResetBtn").addEventListener("click",resetFirenzeOverrides);
+document.getElementById("historySaveConfigBtn").addEventListener("click",()=>{saveHistoryConfig();historyRefreshButtons();});
+document.getElementById("historyTestBtn").addEventListener("click",testHistoryConnection);
+document.getElementById("historyRefreshBtn").addEventListener("click",refreshHistoryPatients);
+document.getElementById("historySearch").addEventListener("input",renderHistoryPatients);
+document.getElementById("historyPatientSelect").addEventListener("change",e=>loadHistoryProposals(e.target.value));
+document.getElementById("historyProposalSelect").addEventListener("change",historyRefreshButtons);
+document.getElementById("historyOpenBtn").addEventListener("click",openSelectedHistoryProposal);
+document.getElementById("historyNewVersionBtn").addEventListener("click",saveHistoryNewVersion);
+document.getElementById("historyOverwriteBtn").addEventListener("click",overwriteHistoryProposal);
+document.getElementById("historyArchiveBtn").addEventListener("click",archiveHistoryProposal);
+document.getElementById("historyRecalcBtn").addEventListener("click",recalcHistoryPricing);
 document.getElementById("legalExportBtn").addEventListener("click",openLegalExport);
 document.getElementById("legalCloseBtn").addEventListener("click",closeLegalExport);
 document.getElementById("legalCopyBtn").addEventListener("click",copyLegalSummary);
@@ -2741,6 +3083,9 @@ document.addEventListener("keydown",e=>{
  if(!document.getElementById("pdfReadyModal").classList.contains("hidden")) closePdfReady();
 });
 
+loadHistoryConfigToUi();
+historyRenderCurrent();
+if(historyConfig().url&&historyConfig().token) refreshHistoryPatients();
 update();
 window.addEventListener("resize",()=>requestAnimationFrame(updatePageSizes));
 window.addEventListener("load",()=>requestAnimationFrame(()=>requestAnimationFrame(updatePageSizes)));
@@ -2757,7 +3102,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   });
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("./service-worker.js?v=64", {updateViaCache:"none"});
+      const reg = await navigator.serviceWorker.register("./service-worker.js?v=65", {updateViaCache:"none"});
       await reg.update();
     } catch (err) {
       console.warn("Service Worker não pôde ser registrado/atualizado:", err);
