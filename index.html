@@ -999,22 +999,46 @@ textarea{min-height:60px;resize:vertical}
 
 /* ---------- HISTÓRICO DE PROPOSTAS (GOOGLE SHEETS) ---------- */
 .history-panel{border:1px solid #d8e1de;border-radius:12px;background:#f8faf9;padding:10px;margin:0 0 10px}
-.history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.history-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
 .history-title{font-size:12px;font-weight:800;color:var(--teal)}
 .history-connection{font-size:9.5px;line-height:1.3;padding:4px 7px;border-radius:999px;background:#eee;color:#65706e;white-space:nowrap}
 .history-connection.ok{background:#e8f2ed;color:#335f50}
 .history-connection.warn{background:#fbf1e5;color:#795a36}
 .history-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.history-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.history-actions .btn{width:100%}
-.history-current{margin-top:8px;padding:8px;border:1px solid #dce4e1;border-radius:8px;background:#fff;font-size:10px;line-height:1.4;color:#5f6b69}
+.history-primary-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.history-primary-actions .btn,.history-more-actions .btn{width:100%}
+.history-overwrite-wrap{margin-top:6px}.history-overwrite-wrap .btn{width:100%}
+.history-current{margin-top:8px;padding:8px 9px;border:1px solid #dce4e1;border-radius:9px;background:#fff;color:#5f6b69}
 .history-current.dirty{border-color:#d8b88a;background:#fff8ef;color:#6d5234}
-.history-config{margin-top:9px;border-top:1px solid #e1e7e5;padding-top:7px}
-.history-config summary{font-size:10px;font-weight:800;color:#6d7775;cursor:pointer}
+.history-current-main{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;line-height:1.35}
+.history-current-name{font-weight:800;color:var(--teal);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-state{font-size:9px;padding:3px 6px;border-radius:999px;background:#edf4f0;color:#3e6658;white-space:nowrap}
+.history-current.dirty .history-state{background:#f7e9d7;color:#765a37}
+.history-current-sub{margin-top:3px;font-size:8.8px;line-height:1.35;color:#7b8583}
+.history-more{margin-top:8px;border-top:1px solid #e1e7e5!important;border-bottom:0!important;padding:7px 0 0!important}
+.history-more>summary,.history-config summary{font-size:10px;font-weight:800;color:#6d7775;cursor:pointer;list-style:none}
+.history-more>summary::-webkit-details-marker,.history-config summary::-webkit-details-marker{display:none}
+.history-more>summary:before,.history-config summary:before{content:'▸ ';color:#8a9693}
+.history-more[open]>summary:before,.history-config[open] summary:before{content:'▾ '}
+.history-more-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.history-config{margin-top:8px;padding:7px 0 0!important;border-top:1px solid #e6ebe9!important;border-bottom:0!important}
 .history-config .field{margin-top:7px}
 .history-config input{font-size:10px}
 .history-error{margin-top:7px;color:#8b3f3f;font-size:10px;line-height:1.4}
-@media(max-width:520px){.history-grid,.history-actions{grid-template-columns:1fr}}
+.history-sync-note{font-size:8.7px;color:#8a9492;margin-top:3px;min-height:11px}
+.history-conflict-modal{position:fixed;inset:0;z-index:10020;background:rgba(9,25,34,.58);display:flex;align-items:center;justify-content:center;padding:18px}
+.history-conflict-box{width:min(440px,100%);background:#fff;border-radius:14px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.18)}
+.history-conflict-box h3{margin:0 0 7px;color:var(--teal);font-size:16px}
+.history-conflict-box p{margin:0;color:#667174;font-size:11px;line-height:1.5}
+.history-conflict-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:14px}.history-conflict-box>.btn{width:100%}
+@media(max-width:520px){
+ .history-grid{grid-template-columns:1fr}
+ .history-primary-actions{grid-template-columns:1fr 1fr}
+ .history-primary-actions .btn{font-size:10px;padding-left:6px;padding-right:6px}
+ .history-more-actions{grid-template-columns:1fr}
+ .history-current-main{align-items:flex-start}
+ .history-conflict-actions{grid-template-columns:1fr}
+}
 
 /* ---------- PRINT ---------- */
 @media print{
@@ -1052,8 +1076,7 @@ textarea{min-height:60px;resize:vertical}
 <div class="app">
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
-  <p class="intro">Documento mobile-first com páginas de altura dinâmica. O PDF é gerado diretamente pelo navegador, sem usar tamanhos de papel do macOS.</p>
-  <div class="hint" style="margin:-7px 0 10px;color:#879294">Versão do app: <b>v65</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:0 0 10px;color:#879294">Versão do app: <b>v67</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1069,8 +1092,8 @@ textarea{min-height:60px;resize:vertical}
       <div class="history-panel">
         <div class="history-head">
           <div>
-            <div class="history-title">Histórico no Google Sheets</div>
-            <div class="hint" style="margin-top:2px">Salva versões completas da proposta. O questionário clínico/jurídico não é enviado.</div>
+            <div class="history-title">Histórico de propostas</div>
+            <div id="historySyncNote" class="history-sync-note"></div>
           </div>
           <div id="historyConnectionBadge" class="history-connection warn">Não configurado</div>
         </div>
@@ -1085,7 +1108,7 @@ textarea{min-height:60px;resize:vertical}
             <select id="historyPatientSelect"><option value="">Selecione</option></select>
           </div>
           <div class="field" style="margin:0">
-            <label class="flabel">Versão salva</label>
+            <label class="flabel">Proposta salva</label>
             <select id="historyProposalSelect"><option value="">Selecione</option></select>
           </div>
         </div>
@@ -1093,24 +1116,32 @@ textarea{min-height:60px;resize:vertical}
         <div id="historyCurrent" class="history-current">Nenhuma proposta do histórico carregada.</div>
         <div id="historyError" class="history-error hidden"></div>
 
-        <div class="history-actions">
-          <button class="btn primary" id="historyNewVersionBtn" type="button">Salvar como nova versão</button>
-          <button class="btn secondary" id="historyOverwriteBtn" type="button" disabled>Salvar alterações</button>
-          <button class="btn ghost" id="historyOpenBtn" type="button">Abrir versão</button>
-          <button class="btn ghost" id="historyRefreshBtn" type="button">Atualizar histórico</button>
-          <button class="btn ghost" id="historyRecalcBtn" type="button">Recalcular hospital/anestesia</button>
-          <button class="btn ghost" id="historyArchiveBtn" type="button" disabled>Arquivar versão</button>
+        <div class="history-primary-actions">
+          <button class="btn primary" id="historyOpenBtn" type="button">Abrir proposta</button>
+          <button class="btn secondary" id="historyNewVersionBtn" type="button">Salvar nova versão</button>
+        </div>
+        <div id="historyOverwriteWrap" class="history-overwrite-wrap hidden">
+          <button class="btn ghost wide" id="historyOverwriteBtn" type="button" disabled>Salvar alterações nesta versão</button>
         </div>
 
-        <details class="history-config" id="historyConfigDetails">
-          <summary>Configurar conexão com Google Sheets</summary>
-          <div class="field"><label class="flabel">URL do Web App (Apps Script)</label><input id="historyApiUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
-          <div class="field"><label class="flabel">Token de acesso</label><input id="historyApiToken" type="password" autocomplete="off" placeholder="Cole o token gerado pelo Apps Script"></div>
-          <div class="history-actions">
-            <button class="btn secondary" id="historySaveConfigBtn" type="button">Salvar conexão</button>
-            <button class="btn ghost" id="historyTestBtn" type="button">Testar conexão</button>
+        <details class="history-more" id="historyMoreDetails">
+          <summary>Mais opções</summary>
+          <div class="history-more-actions">
+            <button class="btn ghost" id="historyRefreshBtn" type="button">Sincronizar agora</button>
+            <button class="btn ghost" id="historyRecalcBtn" type="button">Recalcular hospital/anestesia</button>
+            <button class="btn ghost" id="historyArchiveBtn" type="button" disabled>Arquivar versão</button>
           </div>
-          <div class="hint" style="margin-top:7px">A URL e o token ficam apenas neste navegador (localStorage) e não entram no PDF, nos padrões ou no histórico.</div>
+
+          <details class="history-config" id="historyConfigDetails">
+            <summary>Configurações da conexão</summary>
+            <div class="field"><label class="flabel">URL do Web App (Apps Script)</label><input id="historyApiUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+            <div class="field"><label class="flabel">Token de acesso</label><input id="historyApiToken" type="password" autocomplete="off" placeholder="Cole o token gerado pelo Apps Script"></div>
+            <div class="history-more-actions">
+              <button class="btn secondary" id="historySaveConfigBtn" type="button">Salvar conexão</button>
+              <button class="btn ghost" id="historyTestBtn" type="button">Testar conexão</button>
+            </div>
+            <div class="hint" style="margin-top:7px">A URL e o token ficam apenas neste navegador e não entram no PDF, nos padrões ou no histórico.</div>
+          </details>
         </details>
       </div>
     </div>
@@ -1481,6 +1512,18 @@ textarea{min-height:60px;resize:vertical}
     </div>
   </section>
 </main>
+</div>
+
+<div class="history-conflict-modal hidden" id="historyConflictModal" role="dialog" aria-modal="true" aria-labelledby="historyConflictTitle">
+  <div class="history-conflict-box">
+    <h3 id="historyConflictTitle">Proposta alterada em outro dispositivo</h3>
+    <p>Esta versão foi modificada depois que você a abriu. Para evitar sobrescrever uma atualização mais recente, escolha como continuar.</p>
+    <div class="history-conflict-actions">
+      <button class="btn primary" id="historyConflictReloadBtn" type="button">Recarregar versão atual</button>
+      <button class="btn secondary" id="historyConflictNewBtn" type="button">Criar nova versão</button>
+    </div>
+    <button class="btn ghost wide" id="historyConflictCancelBtn" type="button" style="margin-top:7px">Cancelar</button>
+  </div>
 </div>
 
 <div class="legal-modal hidden" id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legalModalTitle">
@@ -2373,17 +2416,19 @@ function updatePageSizes(){
 
 
 /* ---------- HISTÓRICO GOOGLE SHEETS ---------- */
-const HISTORY_APP_VERSION="v65";
+const HISTORY_APP_VERSION="v67";
 const HISTORY_CONFIG_KEY="planoCirurgicoHistoryConfigV1";
 const HISTORY_EXCLUDED_IDS=new Set([
  "legalQuestionnaire","historySearch","historyPatientSelect","historyProposalSelect","historyApiUrl","historyApiToken"
 ]);
 let historyPatients=[];
 let historyProposals=[];
-let currentHistory={patientId:"",proposalId:"",version:null,patientName:""};
+let currentHistory={patientId:"",proposalId:"",version:null,patientName:"",updatedAt:""};
 let historyDirty=false;
 let historyRestoring=false;
 let historyPricingLock=null;
+let historyLastSyncAt=null;
+let historyAutoRefreshTimer=null;
 
 function historyConfig(){
  try{return JSON.parse(localStorage.getItem(HISTORY_CONFIG_KEY)||"{}")||{};}catch(e){return {};}
@@ -2406,6 +2451,11 @@ function historyNormalizeName(s){return String(s||"").normalize("NFD").replace(/
 function historySetConnection(text,ok=false){
  const el=document.getElementById("historyConnectionBadge");if(!el)return;
  el.textContent=text;el.className="history-connection "+(ok?"ok":"warn");
+}
+function historySetLastSync(){
+ historyLastSyncAt=new Date();
+ const el=document.getElementById("historySyncNote");if(!el)return;
+ el.textContent=`Última sincronização: ${historyLastSyncAt.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`;
 }
 function historyShowError(msg){
  const el=document.getElementById("historyError");if(!el)return;
@@ -2431,7 +2481,7 @@ async function historyApi(action,data={}){
 }
 async function testHistoryConnection(){
  historyShowError("");
- try{historySetBusy(true,"Testando...");const r=await historyApi("ping");historySetConnection("Conectado",true);historyShowError("");await refreshHistoryPatients();return r;}
+ try{historySetBusy(true,"Testando...");const r=await historyApi("ping");historySetConnection("Conectado ✓",true);historyShowError("");await refreshHistoryPatients();return r;}
  catch(e){historySetConnection("Falha na conexão",false);historyShowError(e.message);}
  finally{historySetBusy(false);historyRefreshButtons();}
 }
@@ -2499,7 +2549,7 @@ function restoreProposalSnapshot(snapshot,meta={}){
    document.getElementById("anesthesia").value=historyPricingLock.anesthesia;
   }
   update();
-  currentHistory={patientId:meta.patientId||"",proposalId:meta.proposalId||"",version:meta.version??null,patientName:meta.patientName||snapshot.patient?.name||""};
+  currentHistory={patientId:meta.patientId||"",proposalId:meta.proposalId||"",version:meta.version??null,patientName:meta.patientName||snapshot.patient?.name||"",updatedAt:meta.updatedAt||""};
   historyDirty=false;
   historyRenderCurrent();
  }finally{historyRestoring=false;}
@@ -2517,11 +2567,14 @@ function markHistoryDirty(){
 }
 function historyRenderCurrent(){
  const el=document.getElementById("historyCurrent");if(!el)return;
+ const overwriteWrap=document.getElementById("historyOverwriteWrap");
  if(currentHistory.proposalId){
   const nm=currentHistory.patientName||document.getElementById("patient").value||"Paciente";
-  el.innerHTML=`<b>${esc(nm)}</b> • versão <b>v${currentHistory.version}</b>${historyPricingLock?" • valores hospitalares preservados do histórico":""}${historyDirty?"<br>● Alterações não salvas":"<br>Salva no histórico"}`;
+  el.innerHTML=`<div class="history-current-main"><div class="history-current-name">${esc(nm)} · v${currentHistory.version}</div><div class="history-state">${historyDirty?"● Não salvo":"Salva ✓"}</div></div>${historyPricingLock?'<div class="history-current-sub">Valores de hospital/anestesia preservados desta versão.</div>':''}`;
+  if(overwriteWrap)overwriteWrap.classList.toggle("hidden",!historyDirty);
  }else{
-  el.innerHTML=historyDirty?"Rascunho atual • <b>não salvo no histórico</b>":"Nenhuma proposta do histórico carregada.";
+  el.innerHTML=historyDirty?'<div class="history-current-main"><div class="history-current-name">Rascunho atual</div><div class="history-state">● Não salvo</div></div>':'Nenhuma proposta do histórico carregada.';
+  if(overwriteWrap)overwriteWrap.classList.add("hidden");
  }
  el.classList.toggle("dirty",historyDirty);
  historyRefreshButtons();
@@ -2549,9 +2602,26 @@ function proposalMetaForApi(snapshot){
 async function refreshHistoryPatients(){
  if(!(historyConfig().url&&historyConfig().token)){historyRefreshButtons();return;}
  try{
-  const r=await historyApi("listPatients");historyPatients=r.patients||[];renderHistoryPatients();historySetConnection("Conectado",true);historyShowError("");
+  const r=await historyApi("listPatients");historyPatients=r.patients||[];renderHistoryPatients();historySetConnection("Conectado ✓",true);historySetLastSync();historyShowError("");
  }catch(e){historyShowError(e.message);historySetConnection("Falha na conexão",false);}
  finally{historyRefreshButtons();}
+}
+async function syncHistoryView(){
+ if(!(historyConfig().url&&historyConfig().token))return;
+ const patientSel=document.getElementById("historyPatientSelect");
+ const proposalSel=document.getElementById("historyProposalSelect");
+ const pid=patientSel?.value||"";
+ const proposalId=proposalSel?.value||currentHistory.proposalId||"";
+ await refreshHistoryPatients();
+ if(pid){
+  patientSel.value=pid;
+  await loadHistoryProposals(pid);
+  if(proposalId && historyProposals.some(p=>p.proposal_id===proposalId))proposalSel.value=proposalId;
+ }
+}
+function scheduleHistoryAutoSync(delay=250){
+ clearTimeout(historyAutoRefreshTimer);
+ historyAutoRefreshTimer=setTimeout(()=>syncHistoryView().catch(()=>{}),delay);
 }
 function renderHistoryPatients(){
  const q=(document.getElementById("historySearch").value||"").trim().toLocaleLowerCase("pt-BR");
@@ -2565,17 +2635,29 @@ async function loadHistoryProposals(patientId){
  if(!patientId){historyRefreshButtons();return;}
  try{
   const r=await historyApi("listProposals",{patientId});historyProposals=r.proposals||[];
-  sel.innerHTML='<option value="">Selecione</option>'+historyProposals.map(p=>`<option value="${esc(p.proposal_id)}">v${p.versao} • ${esc(p.data_orcamento||formatHistoryDate(p.criado_em))} • ${BRL(p.total||0)}</option>`).join("");
+  sel.innerHTML='<option value="">Selecione</option>'+historyProposals.map(p=>`<option value="${esc(p.proposal_id)}">${esc(formatHistoryDateTime(p.criado_em||p.data_orcamento))} • ${BRL(p.total||0)}</option>`).join("");
  }catch(e){historyShowError(e.message);}
  historyRefreshButtons();
 }
 function formatHistoryDate(v){if(!v)return"";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString("pt-BR");}
+function formatHistoryDateTime(v){
+ if(!v)return"";
+ let d=new Date(v);
+ if(Number.isNaN(d.getTime())){
+  const s=String(v).replace(/\s*\([^)]*\)\s*$/,'').trim();
+  d=new Date(s);
+  if(Number.isNaN(d.getTime())) return String(v);
+ }
+ const date=d.toLocaleDateString("pt-BR");
+ const time=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+ return `${date} • ${time}`;
+}
 async function openSelectedHistoryProposal(){
  const proposalId=document.getElementById("historyProposalSelect").value;if(!proposalId)return;
  try{
   historySetBusy(true,"Abrindo...");const r=await historyApi("getProposal",{proposalId});
-  restoreProposalSnapshot(r.snapshot,{proposalId:r.proposal.proposal_id,patientId:r.proposal.patient_id,version:r.proposal.versao,patientName:r.proposal.patient_name});
-  document.getElementById("historyDetails").open=true;window.scrollTo({top:0,behavior:"smooth"});historySetConnection("Conectado",true);
+  restoreProposalSnapshot(r.snapshot,{proposalId:r.proposal.proposal_id,patientId:r.proposal.patient_id,version:r.proposal.versao,patientName:r.proposal.patient_name,updatedAt:r.proposal.atualizado_em||r.proposal.criado_em||""});
+  document.getElementById("historyDetails").open=true;window.scrollTo({top:0,behavior:"smooth"});historySetConnection("Conectado ✓",true);
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
 }
 async function saveHistoryNewVersion(){
@@ -2584,23 +2666,44 @@ async function saveHistoryNewVersion(){
   historySetBusy(true,"Salvando...");
   const samePatient=currentHistory.patientId && historyNormalizeName(name)===historyNormalizeName(currentHistory.patientName||name);
   const r=await historyApi("createVersion",{patientId:samePatient?currentHistory.patientId:"",patientName:name,snapshot,meta:proposalMetaForApi(snapshot)});
-  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};
+  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name,updatedAt:r.proposal.atualizado_em||""};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};
   historyRenderCurrent();await refreshHistoryPatients();document.getElementById("historyPatientSelect").value=currentHistory.patientId;await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;
   alert(`Proposta salva como versão v${currentHistory.version}.`);
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
 }
 async function overwriteHistoryProposal(){
  if(!currentHistory.proposalId)return;
- if(!confirm(`Substituir a versão v${currentHistory.version} no histórico? A versão anterior não poderá ser recuperada por este botão.`))return;
+ if(!confirm(`Salvar as alterações na versão v${currentHistory.version}?`))return;
  const snapshot=buildProposalSnapshot();
  try{
-  historySetBusy(true,"Salvando...");const r=await historyApi("overwriteProposal",{proposalId:currentHistory.proposalId,snapshot,meta:proposalMetaForApi(snapshot)});
-  historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyRenderCurrent();await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;alert("Alterações salvas na mesma versão.");
+  historySetBusy(true,"Salvando...");
+  const r=await historyApi("overwriteProposal",{proposalId:currentHistory.proposalId,expectedUpdatedAt:currentHistory.updatedAt||"",snapshot,meta:proposalMetaForApi(snapshot)});
+  currentHistory.updatedAt=r.proposal.atualizado_em||currentHistory.updatedAt;
+  historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyRenderCurrent();await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;historySetLastSync();historySetConnection("Conectado ✓",true);alert("Alterações salvas na mesma versão.");
+ }catch(e){
+  if(String(e.message||"").startsWith("CONFLICT:")){historySetConnection("Conectado ✓",true);openHistoryConflictModal();}
+  else historyShowError(e.message);
+ }finally{historySetBusy(false);historyRefreshButtons();}
+}
+function openHistoryConflictModal(){document.getElementById("historyConflictModal")?.classList.remove("hidden");}
+function closeHistoryConflictModal(){document.getElementById("historyConflictModal")?.classList.add("hidden");}
+async function resolveHistoryConflictReload(){
+ closeHistoryConflictModal();
+ if(!currentHistory.proposalId)return;
+ try{
+  historySetBusy(true,"Recarregando...");
+  const r=await historyApi("getProposal",{proposalId:currentHistory.proposalId});
+  restoreProposalSnapshot(r.snapshot,{proposalId:r.proposal.proposal_id,patientId:r.proposal.patient_id,version:r.proposal.versao,patientName:r.proposal.patient_name,updatedAt:r.proposal.atualizado_em||r.proposal.criado_em||""});
+  historySetLastSync();historyShowError("");
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
+}
+async function resolveHistoryConflictNewVersion(){
+ closeHistoryConflictModal();
+ await saveHistoryNewVersion();
 }
 async function archiveHistoryProposal(){
  if(!currentHistory.proposalId)return;if(!confirm(`Arquivar a versão v${currentHistory.version}? Ela continuará na planilha e poderá ser recuperada manualmente.`))return;
- try{await historyApi("archiveProposal",{proposalId:currentHistory.proposalId});const pid=currentHistory.patientId;currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName};historyPricingLock=null;historyDirty=false;historyRenderCurrent();await loadHistoryProposals(pid);await refreshHistoryPatients();}
+ try{await historyApi("archiveProposal",{proposalId:currentHistory.proposalId});const pid=currentHistory.patientId;currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName,updatedAt:""};historyPricingLock=null;historyDirty=false;historyRenderCurrent();await loadHistoryProposals(pid);await refreshHistoryPatients();}
  catch(e){historyShowError(e.message);}
 }
 function recalcHistoryPricing(){historyUnlockPricing();historyDirty=true;update();historyRenderCurrent();}
@@ -2643,7 +2746,7 @@ function newPatient(){
  document.querySelectorAll("#otherProceduresList .other-procedure-row.extra").forEach(x=>x.remove());
  document.getElementById("legalQuestionnaire").value="";
  document.querySelectorAll(".procedureCheck").forEach(x=>x.checked=false);
- currentHistory={patientId:"",proposalId:"",version:null,patientName:""};
+ currentHistory={patientId:"",proposalId:"",version:null,patientName:"",updatedAt:""};
  historyPricingLock=null;historyDirty=false;historyRenderCurrent();
  window.scrollTo({top:0,behavior:"smooth"});
  update();
@@ -3061,9 +3164,9 @@ document.getElementById("addOtherProcedureBtn").addEventListener("click",()=>{ad
 document.getElementById("addCustomGarmentBtn").addEventListener("click",()=>{addCustomGarmentRow();markHistoryDirty();});
 document.getElementById("pietaResetBtn").addEventListener("click",resetPietaOverrides);
 document.getElementById("firenzeResetBtn").addEventListener("click",resetFirenzeOverrides);
-document.getElementById("historySaveConfigBtn").addEventListener("click",()=>{saveHistoryConfig();historyRefreshButtons();});
+document.getElementById("historySaveConfigBtn").addEventListener("click",()=>{saveHistoryConfig();historyRefreshButtons();scheduleHistoryAutoSync(100);});
 document.getElementById("historyTestBtn").addEventListener("click",testHistoryConnection);
-document.getElementById("historyRefreshBtn").addEventListener("click",refreshHistoryPatients);
+document.getElementById("historyRefreshBtn").addEventListener("click",syncHistoryView);
 document.getElementById("historySearch").addEventListener("input",renderHistoryPatients);
 document.getElementById("historyPatientSelect").addEventListener("change",e=>loadHistoryProposals(e.target.value));
 document.getElementById("historyProposalSelect").addEventListener("change",historyRefreshButtons);
@@ -3072,6 +3175,10 @@ document.getElementById("historyNewVersionBtn").addEventListener("click",saveHis
 document.getElementById("historyOverwriteBtn").addEventListener("click",overwriteHistoryProposal);
 document.getElementById("historyArchiveBtn").addEventListener("click",archiveHistoryProposal);
 document.getElementById("historyRecalcBtn").addEventListener("click",recalcHistoryPricing);
+document.getElementById("historyConflictReloadBtn").addEventListener("click",resolveHistoryConflictReload);
+document.getElementById("historyConflictNewBtn").addEventListener("click",resolveHistoryConflictNewVersion);
+document.getElementById("historyConflictCancelBtn").addEventListener("click",closeHistoryConflictModal);
+document.getElementById("historyConflictModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeHistoryConflictModal()});
 document.getElementById("legalExportBtn").addEventListener("click",openLegalExport);
 document.getElementById("legalCloseBtn").addEventListener("click",closeLegalExport);
 document.getElementById("legalCopyBtn").addEventListener("click",copyLegalSummary);
@@ -3081,14 +3188,17 @@ document.addEventListener("keydown",e=>{
  if(e.key!=="Escape") return;
  if(!document.getElementById("legalModal").classList.contains("hidden")) closeLegalExport();
  if(!document.getElementById("pdfReadyModal").classList.contains("hidden")) closePdfReady();
+ if(!document.getElementById("historyConflictModal").classList.contains("hidden")) closeHistoryConflictModal();
 });
 
 loadHistoryConfigToUi();
 historyRenderCurrent();
-if(historyConfig().url&&historyConfig().token) refreshHistoryPatients();
+if(historyConfig().url&&historyConfig().token) scheduleHistoryAutoSync(50);
 update();
 window.addEventListener("resize",()=>requestAnimationFrame(updatePageSizes));
 window.addEventListener("load",()=>requestAnimationFrame(()=>requestAnimationFrame(updatePageSizes)));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")scheduleHistoryAutoSync(300);});
+window.addEventListener("focus",()=>scheduleHistoryAutoSync(500));
 </script>
 
 <script>

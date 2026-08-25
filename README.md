@@ -1,4 +1,4 @@
-# Plano Cirúrgico PWA — v65
+# Plano Cirúrgico PWA — v67
 
 Versão com cálculo automático do Hospital Pietà por procedimento.
 
@@ -79,14 +79,14 @@ A tabela 2026 do Hospital Firenze foi integrada com cálculo de cirurgias combin
 - “Pagamento a fornecedores” na página 3 foi alterado para “Pagamento a terceiros”.
 
 
-## v65 — auditoria financeira e correções de segurança
+## v67 — auditoria financeira e correções de segurança
 - Quando o cálculo automático de Pietà ou Firenze fica incompleto, os totais de hospital/anestesia são limpos e bloqueados, evitando reaproveitamento silencioso de valores antigos.
 - A geração do PDF é bloqueada enquanto um cálculo automático de hospital estiver incompleto.
 - Firenze: lipoenxertia glútea passa a custo hospitalar/anestésico adicional zero quando há uma lipoaspiração efetivamente cobrada, conforme a regra publicada de que o enxerto glúteo está incluído na lipoaspiração.
 - Firenze: Lipoaspiração de abdome não é cobrada novamente quando combinada com Abdominoplastia ou Mini-abdominoplastia, pois a tabela inclui lipo de frente/abdome dentro do tempo previsto.
 
 
-## Histórico Google Sheets (v65)
+## Histórico Google Sheets (v67)
 Esta versão adiciona o painel de histórico. A conexão fica desativada até configurar o Web App do Google Apps Script.
 Veja `HISTORICO_GOOGLE_SHEETS_PASSO_A_PASSO.md` e a pasta `google-apps-script/`.
 

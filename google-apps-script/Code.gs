@@ -193,7 +193,7 @@ function createVersion_(body) {
   ];
   qs.appendRow(row);
   touchPatient_(ps, patient.row, name);
-  return {proposal:{proposal_id:proposalId, patient_id:patientId, patient_name:name, versao:nextVersion}};
+  return {proposal:{proposal_id:proposalId, patient_id:patientId, patient_name:name, versao:nextVersion, atualizado_em:iso_(now)}};
 }
 
 function overwriteProposal_(body) {
@@ -204,6 +204,11 @@ function overwriteProposal_(body) {
   const found = findRowById_(qs, PROPOSAL_HEADERS, 'proposal_id', proposalId);
   if (!found) throw new Error('Proposta não encontrada.');
   if (truthy_(found.obj.arquivado)) throw new Error('Não é possível sobrescrever uma proposta arquivada.');
+  const expectedUpdatedAt = String(body.expectedUpdatedAt || '').trim();
+  const currentUpdatedAt = iso_(found.obj.atualizado_em || found.obj.criado_em);
+  if (expectedUpdatedAt && currentUpdatedAt && expectedUpdatedAt !== currentUpdatedAt) {
+    throw new Error('CONFLICT:Esta proposta foi modificada em outro dispositivo após ser aberta.');
+  }
 
   const meta = sanitizeMeta_(body.meta || {}, body.snapshot);
   const chunks = snapshotChunks_(body.snapshot);
@@ -227,7 +232,7 @@ function overwriteProposal_(body) {
   const patient = findRowById_(ps, PATIENT_HEADERS, 'patient_id', found.obj.patient_id);
   const name = String(body.snapshot.patient && body.snapshot.patient.name || patient && patient.obj.nome || '').trim();
   if (patient) touchPatient_(ps, patient.row, name || patient.obj.nome);
-  return {proposal:{proposal_id:proposalId, patient_id:String(found.obj.patient_id), patient_name:name, versao:Number(found.obj.versao||0)}};
+  return {proposal:{proposal_id:proposalId, patient_id:String(found.obj.patient_id), patient_name:name, versao:Number(found.obj.versao||0), atualizado_em:iso_(now)}};
 }
 
 function archiveProposal_(body) {

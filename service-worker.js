@@ -1,4 +1,4 @@
-const CACHE_NAME = "plano-cirurgico-v65";
+const CACHE_NAME = "plano-cirurgico-v67";
 const APP_SHELL = [
   "./",
   "./index.html",
