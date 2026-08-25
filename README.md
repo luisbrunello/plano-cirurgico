@@ -1,9 +1,13 @@
-# Plano Cirúrgico PWA — v70
+# Plano Cirúrgico PWA — v71
 
 Gerador mobile-first de propostas cirúrgicas com histórico em Google Sheets, versões de orçamento, cálculo automático para Hospital Pietà/Firenze e cadastro cadastral discreto de pacientes.
 
-## Novidades da v70
+## Novidades da v71
 
+- Auditoria adicional do histórico/cadastro: preservação correta do vínculo da paciente ao criar nova versão após importação do Amigo.
+- Proteção do resumo jurídico contra mistura acidental de dados cadastrais de outra paciente.
+- Validação mais rigorosa da estrutura da planilha do histórico e das colunas essenciais da exportação do Amigo.
+- Importação em lote otimizada no Apps Script.
 - Cadastro por paciente com 8 campos essenciais: nome, nascimento, CPF, sexo, e-mail, celular, CEP e endereço.
 - Status compacto `x/8` dentro do Histórico.
 - Edição manual do cadastro em **Mais opções**.
@@ -18,7 +22,7 @@ Gerador mobile-first de propostas cirúrgicas com histórico em Google Sheets, v
 
 - `index.html` — aplicativo completo.
 - `manifest.webmanifest` — configuração PWA.
-- `service-worker.js` — cache v70.
+- `service-worker.js` — cache v71.
 - `google-apps-script/Code.gs` — API do histórico e cadastro.
 - `google-apps-script/appsscript.json` — manifesto de referência do Apps Script.
 - `HISTORICO_GOOGLE_SHEETS_PASSO_A_PASSO.md` — instruções de atualização e uso.
@@ -26,7 +30,7 @@ Gerador mobile-first de propostas cirúrgicas com histórico em Google Sheets, v
 
 ## Atualização do Apps Script
 
-A v70 altera o esquema da aba `Pacientes`. Substitua o `Code.gs` e publique uma **nova versão** da implantação existente. A URL `/exec` e o token podem permanecer os mesmos.
+A v71 altera o esquema da aba `Pacientes`. Substitua o `Code.gs` e publique uma **nova versão** da implantação existente. A URL `/exec` e o token podem permanecer os mesmos.
 
 As novas colunas são acrescentadas automaticamente ao final da aba `Pacientes`; os registros e propostas existentes são preservados.
 

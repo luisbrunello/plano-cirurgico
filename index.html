@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gerador de Plano Cirúrgico — Dr. Luis Brunello</title>
-<meta name="app-build" content="70">
+<meta name="app-build" content="71">
 <style id="dynamicPageStyle"></style>
 <style>
 :root{
@@ -1092,7 +1092,7 @@ textarea{min-height:60px;resize:vertical}
 <div class="app">
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
-  <div class="hint" style="margin:0 0 10px;color:#879294">Versão do app: <b>v70</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:0 0 10px;color:#879294">Versão do app: <b>v71</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn legal wide" id="legalExportBtn">Exportar resumo para jurídico</button>
@@ -2479,14 +2479,14 @@ function updatePageSizes(){
 
 
 /* ---------- HISTÓRICO GOOGLE SHEETS ---------- */
-const HISTORY_APP_VERSION="v70";
+const HISTORY_APP_VERSION="v71";
 const HISTORY_CONFIG_KEY="planoCirurgicoHistoryConfigV1";
 const HISTORY_EXCLUDED_IDS=new Set([
  "historySearch","historyPatientSelect","historyProposalSelect","historyApiUrl","historyApiToken"
 ]);
 let historyPatients=[];
 let historyProposals=[];
-let currentHistory={patientId:"",proposalId:"",version:null,patientName:"",updatedAt:""};
+let currentHistory={patientId:"",proposalId:"",version:null,patientName:"",snapshotPatientName:"",updatedAt:""};
 let historyDirty=false;
 let historyRestoring=false;
 let historyPricingLock=null;
@@ -2619,7 +2619,7 @@ function restoreProposalSnapshot(snapshot,meta={}){
    document.getElementById("anesthesia").value=historyPricingLock.anesthesia;
   }
   update();
-  currentHistory={patientId:meta.patientId||"",proposalId:meta.proposalId||"",version:meta.version??null,patientName:meta.patientName||snapshot.patient?.name||"",updatedAt:meta.updatedAt||""};
+  currentHistory={patientId:meta.patientId||"",proposalId:meta.proposalId||"",version:meta.version??null,patientName:meta.patientName||snapshot.patient?.name||"",snapshotPatientName:snapshot.patient?.name||"",updatedAt:meta.updatedAt||""};
   historyDirty=false;
   historyRenderCurrent();
  }finally{historyRestoring=false;}
@@ -2757,6 +2757,13 @@ function historyFormatCep(v){const d=historyDigits(v).slice(0,8);return d.length
 function historyFormatPhone(v){const d=historyDigits(v).slice(0,13);if(d.length===11)return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;if(d.length===10)return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;return d;}
 function historyProfileCount(profile){return HISTORY_PROFILE_FIELDS.reduce((n,k)=>n+(String(profile?.[k]||"").trim()?1:0),0);}
 function historyPatientListItem(patientId){return historyPatients.find(p=>String(p.patient_id)===String(patientId))||null;}
+function historyNameBelongsToLoadedPatient(name){
+ if(!currentHistory.patientId)return false;
+ const target=historyNormalizeName(name);if(!target)return false;
+ const names=[currentHistory.snapshotPatientName,currentHistory.patientName,historyPatientListItem(currentHistory.patientId)?.nome];
+ if(historyPatientProfile.patientId===currentHistory.patientId)names.push(historyPatientProfile.profile?.nome);
+ return names.some(n=>historyNormalizeName(n)===target);
+}
 function historyProfileStatusCount(patientId){
  if(historyPatientProfile.patientId===patientId&&historyPatientProfile.profile)return historyProfileCount(historyPatientProfile.profile);
  return Number(historyPatientListItem(patientId)?.cadastro_count||0);
@@ -2799,7 +2806,9 @@ async function loadHistoryPatientProfile(patientId,{silent=false}={}){
  historyProfileLoading=true;
  try{
   const r=await historyApi("getPatientProfile",{patientId});
-  historyPatientProfile={patientId,profile:r.profile||null};setHistoryProfileForm(r.profile||{});historyShowError("");return r.profile||null;
+  historyPatientProfile={patientId,profile:r.profile||null};
+  if(currentHistory.patientId===patientId && r.profile?.nome)currentHistory.patientName=r.profile.nome;
+  setHistoryProfileForm(r.profile||{});historyRenderCurrent();historyShowError("");return r.profile||null;
  }catch(e){if(!silent)historyShowError(e.message);return null;}
  finally{historyProfileLoading=false;historyRefreshButtons();}
 }
@@ -2817,7 +2826,7 @@ async function saveHistoryPatientProfile(){
  const patientId=selectedHistoryPatientId();if(!patientId){historyShowError("Selecione uma paciente para salvar o cadastro.");return;}
  const profile=historyProfileFromForm();if(!profile.nome){historyShowError("Informe o nome completo da paciente.");return;}
  try{
-  historySetBusy(true,"Salvando cadastro...");const r=await historyApi("updatePatientProfile",{patientId,profile,source:"Manual"});historyPatientProfile={patientId,profile:r.profile||profile};setHistoryProfileForm(r.profile||profile);await refreshHistoryPatients();document.getElementById("historyPatientSelect").value=patientId;renderHistoryProfileStatus();historySetConnection("Conectado ✓",true);
+  historySetBusy(true,"Salvando cadastro...");const r=await historyApi("updatePatientProfile",{patientId,profile,source:"Manual"});historyPatientProfile={patientId,profile:r.profile||profile};if(currentHistory.patientId===patientId&&(r.profile?.nome||profile.nome))currentHistory.patientName=r.profile?.nome||profile.nome;setHistoryProfileForm(r.profile||profile);await refreshHistoryPatients();document.getElementById("historyPatientSelect").value=patientId;historyRenderCurrent();renderHistoryProfileStatus();historySetConnection("Conectado ✓",true);
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);}
 }
 function openHistoryProfileEditor(){
@@ -2856,7 +2865,7 @@ function amigoProfileFromRow(row){const m=amigoRowMap(row),cpfRaw=historyDigits(
 };}
 async function readAmigoXlsx(file){
  const XLSX=await waitForXLSX();const data=await file.arrayBuffer();const wb=XLSX.read(data,{type:"array",cellDates:false});const first=wb.SheetNames?.[0];if(!first)throw new Error("O arquivo XLSX não contém planilhas.");const rows=XLSX.utils.sheet_to_json(wb.Sheets[first],{defval:"",raw:false});if(!rows.length)throw new Error("A planilha do Amigo está vazia.");
- const normalizedHeaders=Object.keys(rows[0]||{}).map(amigoNormalizeHeader);if(!normalizedHeaders.includes("nome")||!normalizedHeaders.includes("id"))throw new Error("Não reconheci a exportação do Amigo: as colunas ID e Nome são obrigatórias.");return rows.map(amigoProfileFromRow).filter(r=>r.nome);
+ const normalizedHeaders=Object.keys(rows[0]||{}).map(amigoNormalizeHeader);const requiredHeaders=["id","nome","data de nascimento","cpf","sexo","email","celular","cep","endereco"];const missingHeaders=requiredHeaders.filter(h=>!normalizedHeaders.includes(amigoNormalizeHeader(h)));if(missingHeaders.length)throw new Error(`Não reconheci a exportação do Amigo. Coluna(s) ausente(s): ${missingHeaders.join(", ")}.`);return rows.map(amigoProfileFromRow).filter(r=>r.nome);
 }
 function indexMulti(list,keyFn){const map=new Map();list.forEach(x=>{const k=keyFn(x);if(!k)return;const a=map.get(k)||[];a.push(x);map.set(k,a);});return map;}
 function matchAmigoToHistory(amigoRows){
@@ -2903,9 +2912,9 @@ async function saveHistoryNewVersion(){
  const snapshot=buildProposalSnapshot();const name=(snapshot.patient?.name||"").trim();
  try{
   historySetBusy(true,"Salvando...");
-  const samePatient=currentHistory.patientId && historyNormalizeName(name)===historyNormalizeName(currentHistory.patientName||name);
+  const samePatient=historyNameBelongsToLoadedPatient(name);
   const r=await historyApi("createVersion",{patientId:samePatient?currentHistory.patientId:"",patientName:name,snapshot,meta:proposalMetaForApi(snapshot)});
-  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name,updatedAt:r.proposal.atualizado_em||""};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyComponentPricingLock=historyComponentLockFromSnapshot(snapshot);
+  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name,snapshotPatientName:name,updatedAt:r.proposal.atualizado_em||""};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyComponentPricingLock=historyComponentLockFromSnapshot(snapshot);
   historyRenderCurrent();await refreshHistoryPatients();document.getElementById("historyPatientSelect").value=currentHistory.patientId;await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;renderHistoryProfileStatus();
   alert(`Proposta salva como versão v${currentHistory.version}.`);
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
@@ -2919,7 +2928,7 @@ async function overwriteHistoryProposal(){
  try{
   historySetBusy(true,"Salvando...");
   const r=await historyApi("overwriteProposal",{proposalId:currentHistory.proposalId,expectedUpdatedAt:currentHistory.updatedAt||"",snapshot,meta:proposalMetaForApi(snapshot)});
-  currentHistory.updatedAt=r.proposal.atualizado_em||currentHistory.updatedAt;
+  currentHistory.updatedAt=r.proposal.atualizado_em||currentHistory.updatedAt;currentHistory.snapshotPatientName=snapshot.patient?.name||currentHistory.snapshotPatientName;currentHistory.patientName=r.proposal.patient_name||currentHistory.patientName;
   historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyComponentPricingLock=historyComponentLockFromSnapshot(snapshot);historyRenderCurrent();await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;historySetLastSync();historySetConnection("Conectado ✓",true);alert("Alterações salvas na mesma versão.");
  }catch(e){
   if(String(e.message||"").startsWith("CONFLICT:")){historySetConnection("Conectado ✓",true);openHistoryConflictModal();}
@@ -2949,7 +2958,7 @@ async function archiveHistoryProposal(){
   historySetBusy(true,"Arquivando...");
   await historyApi("archiveProposal",{proposalId:currentHistory.proposalId,expectedUpdatedAt:currentHistory.updatedAt||""});
   const pid=currentHistory.patientId;
-  currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName,updatedAt:""};
+  currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName,snapshotPatientName:currentHistory.snapshotPatientName,updatedAt:""};
   historyPricingLock=null;historyComponentPricingLock=null;historyDirty=false;historyRenderCurrent();
   await loadHistoryProposals(pid);await refreshHistoryPatients();
  }catch(e){
@@ -3244,7 +3253,14 @@ function selectedGarmentLines(){
 }
 function legalPending(v){const s=String(v??"").trim();return s||"PENDENTE";}
 function legalDateBR(v){if(!v)return"PENDENTE";const s=String(v).trim();const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return `${m[3]}/${m[2]}/${m[1]}`;const d=new Date(v);return Number.isNaN(d.getTime())?s:d.toLocaleDateString("pt-BR");}
-function legalCurrentPatientId(){return currentHistory.patientId||document.getElementById("historyPatientSelect")?.value||"";}
+let legalLastPatientName="";
+function legalCurrentPatientId(){
+ const budgetName=(document.getElementById("patient").value||"").trim();
+ if(currentHistory.patientId&&historyNameBelongsToLoadedPatient(budgetName))return currentHistory.patientId;
+ const selected=document.getElementById("historyPatientSelect")?.value||"";
+ if(selected){const item=historyPatientListItem(selected);if(item&&historyNormalizeName(item.nome)===historyNormalizeName(budgetName))return selected;}
+ return "";
+}
 async function legalLoadProfile(){
  const preferredId=legalCurrentPatientId();
  if(preferredId){if(historyPatientProfile.patientId===preferredId&&historyPatientProfile.profile)return historyPatientProfile.profile;const p=await loadHistoryPatientProfile(preferredId,{silent:true});if(p)return p;}
@@ -3266,11 +3282,11 @@ function buildLegalSummary(profile=null){
  lines.push("","Observação: documento destinado à elaboração do contrato e termos relacionados ao procedimento proposto. Não constitui prontuário médico ou anamnese.");return lines.join("\n");
 }
 async function openLegalExport(){
- try{const profile=await legalLoadProfile();document.getElementById("legalReport").value=buildLegalSummary(profile);document.getElementById("legalModal").classList.remove("hidden");}catch(e){historyShowError(e.message);alert(e.message);}
+ try{const profile=await legalLoadProfile();legalLastPatientName=(profile?.nome||document.getElementById("patient").value||"Paciente").trim();document.getElementById("legalReport").value=buildLegalSummary(profile);document.getElementById("legalModal").classList.remove("hidden");}catch(e){historyShowError(e.message);alert(e.message);}
 }
 function closeLegalExport(){document.getElementById("legalModal").classList.add("hidden");}
 async function copyLegalSummary(){const ta=document.getElementById("legalReport");try{await navigator.clipboard.writeText(ta.value);}catch(e){ta.focus();ta.select();document.execCommand("copy");}const btn=document.getElementById("legalCopyBtn"),old=btn.textContent;btn.textContent="Copiado";setTimeout(()=>btn.textContent=old,1300);}
-function downloadLegalSummary(){const content=document.getElementById("legalReport").value,rawName=historyPatientProfile.profile?.nome||document.getElementById("patient").value,filename=`Resumo jurídico (${safePatientFileName(rawName)}).txt`;const blob=new Blob([content],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}
+function downloadLegalSummary(){const content=document.getElementById("legalReport").value,rawName=legalLastPatientName||document.getElementById("patient").value,filename=`Resumo jurídico (${safePatientFileName(rawName)}).txt`;const blob=new Blob([content],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}
 
 function setToday(){
  const d=new Date();
@@ -3369,7 +3385,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   });
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("./service-worker.js?v=70", {updateViaCache:"none"});
+      const reg = await navigator.serviceWorker.register("./service-worker.js?v=71", {updateViaCache:"none"});
       await reg.update();
     } catch (err) {
       console.warn("Service Worker não pôde ser registrado/atualizado:", err);

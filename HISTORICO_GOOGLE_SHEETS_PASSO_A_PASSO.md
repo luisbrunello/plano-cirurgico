@@ -1,6 +1,6 @@
 # Histórico de propostas + cadastro de pacientes — Google Sheets / Apps Script
 
-A v70 mantém o gerador hospedado no Render e usa o Google Sheets como banco de dados do histórico. O Apps Script funciona como API intermediária.
+A v71 mantém o gerador hospedado no Render e usa o Google Sheets como banco de dados do histórico. O Apps Script funciona como API intermediária.
 
 ## Estrutura do banco
 
@@ -9,7 +9,7 @@ A planilha usa duas abas:
 - `Pacientes`: um cadastro por paciente.
 - `Propostas`: uma ou mais versões de orçamento vinculadas à paciente.
 
-Na aba `Pacientes`, além dos campos técnicos, a v70 armazena somente os dados cadastrais definidos para documentos:
+Na aba `Pacientes`, além dos campos técnicos, a v71 armazena somente os dados cadastrais definidos para documentos:
 
 1. Nome completo
 2. Data de nascimento
@@ -24,15 +24,15 @@ Também é guardado, de forma técnica, o `amigo_id` para reconhecer a mesma pac
 
 ## Atualização de uma instalação existente
 
-Se o histórico da v69 já está funcionando:
+Se o histórico da v69 ou v70 já está funcionando:
 
-1. Substitua os arquivos do PWA no GitHub/Render pela v70.
-2. No Google Apps Script, substitua todo o conteúdo de `Code.gs` pelo arquivo da v70.
+1. Substitua os arquivos do PWA no GitHub/Render pela v71.
+2. No Google Apps Script, substitua todo o conteúdo de `Code.gs` pelo arquivo da v71.
 3. Salve.
 4. Vá em **Implantar → Gerenciar implantações → Editar → Nova versão → Implantar**.
 5. A URL `/exec` e o token podem permanecer os mesmos.
 
-A v70 migra automaticamente a aba `Pacientes`, acrescentando as novas colunas cadastrais ao final. Não apague nem reordene os cabeçalhos existentes.
+A v71 mantém a migração automática da aba `Pacientes`: se as colunas cadastrais ainda não existirem, elas são acrescentadas ao final. Não apague nem reordene os cabeçalhos existentes.
 
 Opcionalmente, execute `setupHistoryDatabase()` novamente uma vez após a atualização para reaplicar a formatação da planilha. O token existente não é resetado.
 
@@ -108,7 +108,7 @@ O documento termina com a observação de que se destina à elaboração do cont
 
 ## Teste mínimo recomendado após a atualização
 
-1. Confirme que o topo mostra **v70**.
+1. Confirme que o topo mostra **v71**.
 2. Selecione uma paciente do histórico.
 3. Abra **Cadastro da paciente** e confirme que o status aparece como `1/8` caso exista apenas o nome.
 4. Importe uma exportação do Amigo que contenha essa paciente.

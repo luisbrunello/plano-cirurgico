@@ -204,7 +204,14 @@ function updatePatientProfile_(body) {
     cadastro_origem:String(body.source || 'Manual').trim() || 'Manual',
     cadastro_atualizado_em:now
   });
-  if (body.amigoId !== undefined) updates.amigo_id = String(body.amigoId || '').trim();
+  if (body.amigoId !== undefined) {
+    const amigoId = String(body.amigoId || '').trim();
+    if (amigoId) {
+      const linkedElsewhere = rowsAsObjectsWithRow_(ps, PATIENT_HEADERS).find(x => String(x.obj.amigo_id||'') === amigoId && String(x.obj.patient_id||'') !== String(patientId));
+      if (linkedElsewhere) throw new Error('ID do Amigo já vinculado a outra paciente.');
+    }
+    updates.amigo_id = amigoId;
+  }
   writeObjectUpdates_(ps, found.row, PATIENT_HEADERS, updates);
   const refreshed = findRowById_(ps, PATIENT_HEADERS, 'patient_id', patientId);
   return {profile:profilePublic_(refreshed.obj)};
@@ -216,11 +223,15 @@ function bulkUpdatePatientProfiles_(body) {
   if (updates.length > 500) throw new Error('Importação muito grande para uma única operação.');
   const ss = db_();
   const ps = ss.getSheetByName(PATIENTS_SHEET);
+  const rows = rowsAsObjectsWithRow_(ps, PATIENT_HEADERS);
+  const byPatientId = new Map(rows.map(x => [String(x.obj.patient_id||''), x]));
+  const amigoOwners = new Map();
+  rows.forEach(x => { const id=String(x.obj.amigo_id||'').trim(); if(id&&!amigoOwners.has(id))amigoOwners.set(id,String(x.obj.patient_id||'')); });
   let updated = 0, unchanged = 0, failed = 0;
   const results = [];
   updates.forEach(item => {
     const patientId = String(item.patientId || '').trim();
-    const found = patientId ? findRowById_(ps, PATIENT_HEADERS, 'patient_id', patientId) : null;
+    const found = patientId ? byPatientId.get(patientId) : null;
     if (!found || truthy_(found.obj.arquivado)) {
       failed++; results.push({patientId, ok:false, error:'Paciente não encontrada'});
       return;
@@ -233,8 +244,8 @@ function bulkUpdatePatientProfiles_(body) {
     });
     const amigoId = String(item.amigoId || '').trim();
     if (amigoId) {
-      const linkedElsewhere = rowsAsObjectsWithRow_(ps, PATIENT_HEADERS).find(x => String(x.obj.amigo_id||'') === amigoId && String(x.obj.patient_id||'') !== patientId);
-      if (linkedElsewhere) {
+      const owner = amigoOwners.get(amigoId);
+      if (owner && owner !== patientId) {
         failed++; results.push({patientId, ok:false, error:'ID do Amigo já vinculado a outra paciente'});
         return;
       }
@@ -247,13 +258,15 @@ function bulkUpdatePatientProfiles_(body) {
       merged.atualizado_em = now;
       merged.cadastro_origem = 'Amigo';
       merged.cadastro_atualizado_em = now;
-      writeObjectUpdates_(ps, found.row, PATIENT_HEADERS, merged);
+      Object.assign(found.obj, merged);
+      writeObjectRow_(ps, found.row, PATIENT_HEADERS, found.obj);
+      if (amigoId) amigoOwners.set(amigoId, patientId);
       updated++;
     } else {
       unchanged++;
+      if (amigoId) amigoOwners.set(amigoId, patientId);
     }
-    const current = changed ? findRowById_(ps, PATIENT_HEADERS, 'patient_id', patientId).obj : found.obj;
-    results.push({patientId, ok:true, changed, cadastro_count:profileCompletionCount_(current)});
+    results.push({patientId, ok:true, changed, cadastro_count:profileCompletionCount_(found.obj)});
   });
   return {updated, unchanged, failed, results};
 }
@@ -499,16 +512,19 @@ function ensureSheet_(ss, name, headers) {
   }
   const existingWidth = Math.max(1, sh.getLastColumn());
   const current = sh.getRange(1,1,1,existingWidth).getValues()[0].map(v => String(v||'').trim());
-  const existingHeaders = current.filter(v => v !== '');
-  for (let i=0;i<existingHeaders.length;i++) {
-    if (headers[i] !== existingHeaders[i]) {
-      throw new Error('Estrutura inesperada na aba "' + name + '". Não reordene nem renomeie os cabeçalhos existentes.');
+  const compareWidth = Math.min(current.length, headers.length);
+  for (let i=0;i<compareWidth;i++) {
+    if (!current[i] || headers[i] !== current[i]) {
+      throw new Error('Estrutura inesperada na aba "' + name + '". Não insira, remova, reordene nem renomeie os cabeçalhos existentes.');
     }
   }
-  if (existingHeaders.length > headers.length) throw new Error('A aba "' + name + '" possui colunas desconhecidas antes do fim da estrutura esperada.');
-  if (existingHeaders.length < headers.length) {
-    const missing = headers.slice(existingHeaders.length);
-    sh.getRange(1,existingHeaders.length+1,1,missing.length).setValues([missing]);
+  if (current.length > headers.length) {
+    const extras = current.slice(headers.length).filter(Boolean);
+    if (extras.length) throw new Error('A aba "' + name + '" possui colunas desconhecidas após a estrutura esperada.');
+  }
+  if (current.length < headers.length) {
+    const missing = headers.slice(current.length);
+    sh.getRange(1,current.length+1,1,missing.length).setValues([missing]);
   }
   return sh;
 }
@@ -548,6 +564,9 @@ function writeObjectUpdates_(sheet, row, headers, updates) {
     const idx = headers.indexOf(k);
     if (idx >= 0) sheet.getRange(row, idx+1).setValue(updates[k]);
   });
+}
+function writeObjectRow_(sheet, row, headers, obj) {
+  sheet.getRange(row,1,1,headers.length).setValues([headers.map(h => obj[h] === undefined ? '' : obj[h])]);
 }
 function db_() {
   const props = PropertiesService.getScriptProperties();
