@@ -1076,7 +1076,7 @@ textarea{min-height:60px;resize:vertical}
 <div class="app">
 <aside class="admin">
   <h1>Gerador de plano cirúrgico</h1>
-  <div class="hint" style="margin:0 0 10px;color:#879294">Versão do app: <b>v67</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
+  <div class="hint" style="margin:0 0 10px;color:#879294">Versão do app: <b>v68</b> • histórico Google Sheets • tabelas Pietà + Firenze 2026 integradas</div>
   <div class="toolbar">
     <button class="btn primary" id="printBtn">Gerar proposta em PDF</button>
     <button class="btn secondary" id="newBtn">Nova paciente</button>
@@ -1666,18 +1666,21 @@ function BRL(v){
  return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 }
 function num(id){return Number(document.getElementById(id)?.value||0)}
+function moneyNum(id){const v=num(id);return Number.isFinite(v)?Math.max(0,v):0}
 function checked(id){return !!document.getElementById(id)?.checked}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function firstName(full){return (full.trim().split(/\s+/)[0]||"Paciente")}
 
 function selectedImplant(){
+ if(historyComponentPricingLock && Object.prototype.hasOwnProperty.call(historyComponentPricingLock,"implant")) return {...historyComponentPricingLock.implant};
  if(!checked("useImplant")) return {name:"",value:0};
  const radio=document.querySelector('input[name="implant"]:checked');
  if(!radio) return {name:"",value:0};
- if(radio.value==="other") return {name:document.getElementById("implantOtherName").value||"Prótese mamária",value:num("implantOtherValue")};
+ if(radio.value==="other") return {name:document.getElementById("implantOtherName").value||"Prótese mamária",value:moneyNum("implantOtherValue")};
  const x=implants.find(i=>i.id===radio.value); return x||{name:"",value:0};
 }
 function selectedTech(){
+ if(historyComponentPricingLock && Object.prototype.hasOwnProperty.call(historyComponentPricingLock,"tech")) return {...historyComponentPricingLock.tech};
  if(!checked("useTech")) return {id:"",name:"",value:0};
  const radio=document.querySelector('input[name="tech"]:checked');
  if(!radio) return {id:"",name:"",value:0};
@@ -1696,7 +1699,7 @@ function addOtherProcedureInput(value=""){
  row.innerHTML=`<input class="otherProcedureInput" type="text" placeholder="Outro procedimento"><button class="btn ghost compact removeOtherProcedureBtn" type="button">Remover</button>`;
  const input=row.querySelector("input");
  input.value=value;
- row.querySelector("button").addEventListener("click",()=>{row.remove();update();});
+ row.querySelector("button").addEventListener("click",()=>{row.remove();historyUnlockPricing();markHistoryDirty();update();});
  list.appendChild(row);
  input.focus();
  update();
@@ -1828,7 +1831,9 @@ function getPietaRate(proc){
 function syncPietaRatesFromDom(){
  document.querySelectorAll(".pieta-rate-input").forEach(el=>{
   const proc=el.dataset.proc||""; if(!proc) return;
-  const k=pietaRateKey(proc), kind=el.dataset.kind, def=el.dataset.default ?? "", val=el.value;
+  const raw=el.value===""?"":Number(el.value), val=raw===""?"":String(Number.isFinite(raw)?Math.max(0,raw):0);
+  if(el.value!==val)el.value=val;
+  const k=pietaRateKey(proc), kind=el.dataset.kind, def=el.dataset.default ?? "";
   if(!pietaOverrides[k]) pietaOverrides[k]={};
   if(String(val)===String(def)) delete pietaOverrides[k][kind]; else pietaOverrides[k][kind]=val;
   if(!Object.keys(pietaOverrides[k]).length) delete pietaOverrides[k];
@@ -2033,7 +2038,9 @@ function firenzeRateItems(){
 function syncFirenzeRatesFromDom(){
  document.querySelectorAll(".firenze-rate-input").forEach(el=>{
   const key=el.dataset.key||""; if(!key)return;
-  const k=firenzeRateKey(key),kind=el.dataset.kind,def=el.dataset.default??"",val=el.value;
+  const raw=el.value===""?"":Number(el.value),val=raw===""?"":String(Number.isFinite(raw)?Math.max(0,raw):0);
+  if(el.value!==val)el.value=val;
+  const k=firenzeRateKey(key),kind=el.dataset.kind,def=el.dataset.default??"";
   if(!firenzeOverrides[k])firenzeOverrides[k]={};
   if(String(val)===String(def)) delete firenzeOverrides[k][kind]; else firenzeOverrides[k][kind]=val;
   if(!Object.keys(firenzeOverrides[k]).length)delete firenzeOverrides[k];
@@ -2077,7 +2084,7 @@ function applyFirenzeAutoPricing(){
  const items=firenzeRateItems();if(!items.length){setPending();if(status){status.className="pieta-status warn";status.textContent="Selecione ao menos um procedimento.";}return {active:true,complete:false};}
  const missing=[],h=[],a=[];items.forEach(item=>{const r=getFirenzeRate(item);if(r.hospital===""||r.anesthesia==="")missing.push(item.name);else{h.push(Number(r.hospital)||0);a.push(Number(r.anesthesia)||0);}});
  if(missing.length){setPending();if(status){status.className="pieta-status warn";status.textContent=`Falta correspondência/valor para: ${missing.join(", ")}. Preencha manualmente os campos desta linha para concluir o cálculo.`;}return {active:true,complete:false};}
- const hospitalFinal=firenzeCombined(h),anesthesiaBase=firenzeCombined(a),consult=num("firenzeConsultFee"),anesthesiaFinal=anesthesiaBase+consult;
+ const hospitalFinal=firenzeCombined(h),anesthesiaBase=firenzeCombined(a),consult=moneyNum("firenzeConsultFee"),anesthesiaFinal=anesthesiaBase+consult;
  hospitalEl.value=hospitalFinal.toFixed(2);anesthesiaEl.value=anesthesiaFinal.toFixed(2);hospitalEl.readOnly=true;anesthesiaEl.readOnly=true;hospitalEl.classList.add("pieta-readonly");anesthesiaEl.classList.add("pieta-readonly");
  if(status){status.className="pieta-status ok";status.innerHTML=`Hospital: <b>${BRL(hospitalFinal)}</b> • Anestesia: <b>${BRL(anesthesiaBase)}</b>${consult>0?` + consulta <b>${BRL(consult)}</b> = <b>${BRL(anesthesiaFinal)}</b>`:""}.`;}
  return {active:true,complete:true,hospitalFinal,anesthesiaFinal};
@@ -2086,7 +2093,7 @@ function applyFirenzeAutoPricing(){
 function baseGarmentUnit(g){
  const el=document.getElementById("garv_"+g.id);
  const v=Number(el?.value);
- return Number.isFinite(v)&&v>=0?v:g.unit;
+ return Number.isFinite(v)?Math.max(0,v):g.unit;
 }
 function customGarmentRows(){ return [...document.querySelectorAll("#customGarmentsList .custom-garment-row")]; }
 function garmentTotal(){
@@ -2115,7 +2122,7 @@ function addCustomGarmentRow(data={},focus=true){
  row.querySelector(".customGarmentName").value=data.name||"";
  row.querySelector(".customGarmentValue").value=data.unit??"";
  row.querySelector(".customGarmentQty").value=data.qty||1;
- row.querySelector(".customGarmentRemove").addEventListener("click",()=>{row.remove();update();});
+ row.querySelector(".customGarmentRemove").addEventListener("click",()=>{row.remove();markHistoryDirty();update();});
  list.appendChild(row); if(focus)row.querySelector(".customGarmentName").focus(); update();
 }
 function serializeCustomGarments(){
@@ -2125,25 +2132,33 @@ function restoreCustomGarments(items=[]){
  const list=document.getElementById("customGarmentsList"); if(!list)return; list.innerHTML="";
  (Array.isArray(items)?items:[]).forEach(item=>addCustomGarmentRow(item,false));
 }
-function specialFinal(){ return checked("useSpecialMaterials") ? num("specialMaterialsBase")*1.25 : 0; }
+function specialFinal(){
+ if(historyComponentPricingLock && Object.prototype.hasOwnProperty.call(historyComponentPricingLock,"special")) return Math.max(0,Number(historyComponentPricingLock.special)||0);
+ return checked("useSpecialMaterials") ? moneyNum("specialMaterialsBase")*1.25 : 0;
+}
 
 function calc(){
- const fees=num("fees");
- const assistant=checked("useAssistant")?num("assistantValue"):0;
- const instrument=checked("useInstrument")?num("instrumentValue"):0;
- const hospital=num("hospitalValue");
- const anesthesia=num("anesthesia");
+ const fees=moneyNum("fees");
+ const assistant=checked("useAssistant")?moneyNum("assistantValue"):0;
+ const instrument=checked("useInstrument")?moneyNum("instrumentValue"):0;
+ const hospital=moneyNum("hospitalValue");
+ const anesthesia=moneyNum("anesthesia");
  const implant=selectedImplant();
  const tech=selectedTech();
- const glue=checked("useGlue")?300*Math.max(1,num("glueQty")):0;
+ const glue=(historyComponentPricingLock && Object.prototype.hasOwnProperty.call(historyComponentPricingLock,"glue"))
+   ? Math.max(0,Number(historyComponentPricingLock.glue)||0)
+   : (checked("useGlue")?300*Math.max(1,num("glueQty")):0);
  const garmentsTotal=garmentTotal();
  const special=specialFinal();
- const insurance=checked("useInsurance")?num("insurance"):0;
- const docs=500;
+ const insurance=checked("useInsurance")?moneyNum("insurance"):0;
+ const docs=(historyComponentPricingLock && Object.prototype.hasOwnProperty.call(historyComponentPricingLock,"docs"))
+   ? Math.max(0,Number(historyComponentPricingLock.docs)||0) : 500;
 
  const signalMode=document.getElementById("signalMode")?.value||"percent20";
- const customSignal=Math.max(0,num("signalCustomValue"));
- const signal=signalMode==="custom" ? Math.min(fees,customSignal) : fees*.20;
+ const customSignal=moneyNum("signalCustomValue");
+ const signal=(historyComponentPricingLock && Object.prototype.hasOwnProperty.call(historyComponentPricingLock,"signal"))
+   ? Math.max(0,Number(historyComponentPricingLock.signal)||0)
+   : (signalMode==="custom" ? Math.min(fees,customSignal) : fees*.20);
  const feeResidual=Math.max(0,fees-signal);
  // Valores pagos junto ao médico: não entram hospital, anestesia, prótese, tecnologia nem documentação.
  const teamAddons=assistant+instrument+glue+garmentsTotal+special+insurance;
@@ -2181,6 +2196,11 @@ function row(name,value,dest){
 function paymentRow(name,value,dest){
  return `<div class="pay-row"><div class="pay-name">${esc(name)}</div>${dest?`<a class="info" href="#detail-${dest}">i</a>`:""}<div class="pay-value">${BRL(value)}</div></div>`;
 }
+function anesthesiaIncludesConsult(){
+ return !(document.getElementById("hospital").value==="Hospital Firenze" && moneyNum("firenzeConsultFee")<=0);
+}
+function anesthesiaPaymentLabel(){return anesthesiaIncludesConsult()?"Anestesista + consulta pré-anestésica":"Anestesista";}
+function anesthesiaCompositionLabel(){return anesthesiaIncludesConsult()?"Anestesia + consulta pré-anestésica":"Anestesia";}
 
 function detailCard(key){
  const d=detailTexts[key];
@@ -2355,7 +2375,7 @@ function update(){
  let pays=[];
  const hospName=document.getElementById("hospital").value==="Outro"?(document.getElementById("hospitalOther").value.trim()||"Hospital"):document.getElementById("hospital").value;
  if(C.hospital>0) pays.push([hospName||"Hospital",C.hospital,null]);
- if(C.anesthesia>0) pays.push(["Anestesista + consulta pré-anestésica",C.anesthesia,"hospital"]);
+ if(C.anesthesia>0) pays.push([anesthesiaPaymentLabel(),C.anesthesia,"hospital"]);
  if(C.implant.value>0) pays.push([C.implant.name,C.implant.value,"implant"]);
  if(C.tech.value>0) pays.push([C.tech.name,C.tech.value,C.tech.id]);
  pays.push(["Gestão e documentação",C.docs,null]);
@@ -2416,7 +2436,7 @@ function updatePageSizes(){
 
 
 /* ---------- HISTÓRICO GOOGLE SHEETS ---------- */
-const HISTORY_APP_VERSION="v67";
+const HISTORY_APP_VERSION="v68";
 const HISTORY_CONFIG_KEY="planoCirurgicoHistoryConfigV1";
 const HISTORY_EXCLUDED_IDS=new Set([
  "legalQuestionnaire","historySearch","historyPatientSelect","historyProposalSelect","historyApiUrl","historyApiToken"
@@ -2427,6 +2447,8 @@ let currentHistory={patientId:"",proposalId:"",version:null,patientName:"",updat
 let historyDirty=false;
 let historyRestoring=false;
 let historyPricingLock=null;
+let historyComponentPricingLock=null;
+let historyBusy=false;
 let historyLastSyncAt=null;
 let historyAutoRefreshTimer=null;
 
@@ -2462,10 +2484,12 @@ function historyShowError(msg){
  el.textContent=msg||"";el.classList.toggle("hidden",!msg);
 }
 function historySetBusy(busy,label="Processando..."){
- ["historyNewVersionBtn","historyOverwriteBtn","historyOpenBtn","historyRefreshBtn","historyRecalcBtn","historyArchiveBtn","historyTestBtn"].forEach(id=>{
-  const el=document.getElementById(id);if(el)el.dataset.historyBusy=busy?"1":"0";
+ historyBusy=!!busy;
+ ["historyNewVersionBtn","historyOverwriteBtn","historyOpenBtn","historyRefreshBtn","historyRecalcBtn","historyArchiveBtn","historyTestBtn","historySaveConfigBtn"].forEach(id=>{
+  const el=document.getElementById(id);if(el){el.dataset.historyBusy=historyBusy?"1":"0";el.disabled=historyBusy;}
  });
- if(busy)historySetConnection(label,false);
+ if(historyBusy)historySetConnection(label,false);
+ historyRefreshButtons();
 }
 async function historyApi(action,data={}){
  const c=historyConfig();
@@ -2542,6 +2566,7 @@ function restoreProposalSnapshot(snapshot,meta={}){
    hospitalValue:String(snapshot.exactPricing?.hospitalValue??fields.hospitalValue??""),
    anesthesia:String(snapshot.exactPricing?.anesthesia??fields.anesthesia??"")
   };
+  historyComponentPricingLock=historyComponentLockFromSnapshot(snapshot);
   update();
   // Garante fidelidade física/financeira ao registro histórico, mesmo se a tabela mudar futuramente.
   if(historyPricingLock){
@@ -2555,6 +2580,24 @@ function restoreProposalSnapshot(snapshot,meta={}){
  }finally{historyRestoring=false;}
 }
 function historyUnlockPricing(){historyPricingLock=null;}
+function historyComponentLockFromSnapshot(snapshot){
+ const c=snapshot?.computed||{}, lock={};
+ if(c.implant && typeof c.implant==="object")lock.implant={...c.implant,value:Math.max(0,Number(c.implant.value)||0)};
+ if(c.tech && typeof c.tech==="object")lock.tech={...c.tech,value:Math.max(0,Number(c.tech.value)||0)};
+ ["glue","special","docs","signal"].forEach(k=>{if(c[k]!==undefined&&c[k]!==null&&Number.isFinite(Number(c[k])))lock[k]=Math.max(0,Number(c[k]));});
+ return Object.keys(lock).length?lock:null;
+}
+function historyUnlockAllComponentPricing(){historyComponentPricingLock=null;}
+function historyUnlockComponentPricingFor(t){
+ if(!historyComponentPricingLock||!t)return;
+ const drop=k=>{if(historyComponentPricingLock)delete historyComponentPricingLock[k];};
+ if(t.name==="implant" || ["useImplant","implantOtherName","implantOtherValue"].includes(t.id))drop("implant");
+ if(t.name==="tech" || t.id==="useTech")drop("tech");
+ if(["useGlue","glueQty"].includes(t.id))drop("glue");
+ if(["useSpecialMaterials","specialMaterialsBase"].includes(t.id))drop("special");
+ if(["fees","signalMode","signalCustomValue"].includes(t.id))drop("signal");
+ if(historyComponentPricingLock && !Object.keys(historyComponentPricingLock).length)historyComponentPricingLock=null;
+}
 function historyPricingRelevantTarget(t){
  if(!t)return false;
  if(t.classList?.contains("procedureCheck")||t.classList?.contains("otherProcedureInput")||t.classList?.contains("pieta-rate-input")||t.classList?.contains("firenze-rate-input"))return true;
@@ -2570,7 +2613,7 @@ function historyRenderCurrent(){
  const overwriteWrap=document.getElementById("historyOverwriteWrap");
  if(currentHistory.proposalId){
   const nm=currentHistory.patientName||document.getElementById("patient").value||"Paciente";
-  el.innerHTML=`<div class="history-current-main"><div class="history-current-name">${esc(nm)} · v${currentHistory.version}</div><div class="history-state">${historyDirty?"● Não salvo":"Salva ✓"}</div></div>${historyPricingLock?'<div class="history-current-sub">Valores de hospital/anestesia preservados desta versão.</div>':''}`;
+  el.innerHTML=`<div class="history-current-main"><div class="history-current-name">${esc(nm)} · v${currentHistory.version}</div><div class="history-state">${historyDirty?"● Não salvo":"Salva ✓"}</div></div>${(historyPricingLock||historyComponentPricingLock)?'<div class="history-current-sub">Valores financeiros preservados desta versão.</div>':''}`;
   if(overwriteWrap)overwriteWrap.classList.toggle("hidden",!historyDirty);
  }else{
   el.innerHTML=historyDirty?'<div class="history-current-main"><div class="history-current-name">Rascunho atual</div><div class="history-state">● Não salvo</div></div>':'Nenhuma proposta do histórico carregada.';
@@ -2583,12 +2626,15 @@ function historyRefreshButtons(){
  const configured=!!(historyConfig().url&&historyConfig().token);
  const hasLoaded=!!currentHistory.proposalId;
  const selectedProposal=!!document.getElementById("historyProposalSelect")?.value;
- const set=(id,disabled)=>{const el=document.getElementById(id);if(el)el.disabled=!!disabled;};
+ const set=(id,disabled)=>{const el=document.getElementById(id);if(el)el.disabled=historyBusy||!!disabled;};
  set("historyNewVersionBtn",!configured);
  set("historyOverwriteBtn",!configured||!hasLoaded);
  set("historyOpenBtn",!configured||!selectedProposal);
  set("historyArchiveBtn",!configured||!hasLoaded);
  set("historyRefreshBtn",!configured);
+ set("historyRecalcBtn",!configured||!hasLoaded);
+ set("historyTestBtn",!configured);
+ set("historySaveConfigBtn",false);
 }
 function proposalMetaForApi(snapshot){
  const C=snapshot.computed||{};
@@ -2661,25 +2707,29 @@ async function openSelectedHistoryProposal(){
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
 }
 async function saveHistoryNewVersion(){
- const snapshot=buildProposalSnapshot();const name=(snapshot.patient?.name||"").trim();if(!name){alert("Informe o nome da paciente antes de salvar no histórico.");return;}
+ update();
+ const validationError=validateProposalInputs();if(validationError){historyShowError(validationError);alert(validationError);return;}
+ const snapshot=buildProposalSnapshot();const name=(snapshot.patient?.name||"").trim();
  try{
   historySetBusy(true,"Salvando...");
   const samePatient=currentHistory.patientId && historyNormalizeName(name)===historyNormalizeName(currentHistory.patientName||name);
   const r=await historyApi("createVersion",{patientId:samePatient?currentHistory.patientId:"",patientName:name,snapshot,meta:proposalMetaForApi(snapshot)});
-  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name,updatedAt:r.proposal.atualizado_em||""};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};
+  currentHistory={patientId:r.proposal.patient_id,proposalId:r.proposal.proposal_id,version:r.proposal.versao,patientName:r.proposal.patient_name||name,updatedAt:r.proposal.atualizado_em||""};historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyComponentPricingLock=historyComponentLockFromSnapshot(snapshot);
   historyRenderCurrent();await refreshHistoryPatients();document.getElementById("historyPatientSelect").value=currentHistory.patientId;await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;
   alert(`Proposta salva como versão v${currentHistory.version}.`);
  }catch(e){historyShowError(e.message);}finally{historySetBusy(false);historyRefreshButtons();}
 }
 async function overwriteHistoryProposal(){
  if(!currentHistory.proposalId)return;
+ update();
+ const validationError=validateProposalInputs();if(validationError){historyShowError(validationError);alert(validationError);return;}
  if(!confirm(`Salvar as alterações na versão v${currentHistory.version}?`))return;
  const snapshot=buildProposalSnapshot();
  try{
   historySetBusy(true,"Salvando...");
   const r=await historyApi("overwriteProposal",{proposalId:currentHistory.proposalId,expectedUpdatedAt:currentHistory.updatedAt||"",snapshot,meta:proposalMetaForApi(snapshot)});
   currentHistory.updatedAt=r.proposal.atualizado_em||currentHistory.updatedAt;
-  historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyRenderCurrent();await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;historySetLastSync();historySetConnection("Conectado ✓",true);alert("Alterações salvas na mesma versão.");
+  historyDirty=false;historyPricingLock={hospitalSelection:snapshot.exactPricing.hospitalSelection,hospitalValue:snapshot.exactPricing.hospitalValue,anesthesia:snapshot.exactPricing.anesthesia};historyComponentPricingLock=historyComponentLockFromSnapshot(snapshot);historyRenderCurrent();await loadHistoryProposals(currentHistory.patientId);document.getElementById("historyProposalSelect").value=currentHistory.proposalId;historySetLastSync();historySetConnection("Conectado ✓",true);alert("Alterações salvas na mesma versão.");
  }catch(e){
   if(String(e.message||"").startsWith("CONFLICT:")){historySetConnection("Conectado ✓",true);openHistoryConflictModal();}
   else historyShowError(e.message);
@@ -2702,16 +2752,30 @@ async function resolveHistoryConflictNewVersion(){
  await saveHistoryNewVersion();
 }
 async function archiveHistoryProposal(){
- if(!currentHistory.proposalId)return;if(!confirm(`Arquivar a versão v${currentHistory.version}? Ela continuará na planilha e poderá ser recuperada manualmente.`))return;
- try{await historyApi("archiveProposal",{proposalId:currentHistory.proposalId});const pid=currentHistory.patientId;currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName,updatedAt:""};historyPricingLock=null;historyDirty=false;historyRenderCurrent();await loadHistoryProposals(pid);await refreshHistoryPatients();}
- catch(e){historyShowError(e.message);}
+ if(!currentHistory.proposalId)return;
+ if(!confirm(`Arquivar a versão v${currentHistory.version}? Ela continuará na planilha e poderá ser recuperada manualmente.`))return;
+ try{
+  historySetBusy(true,"Arquivando...");
+  await historyApi("archiveProposal",{proposalId:currentHistory.proposalId,expectedUpdatedAt:currentHistory.updatedAt||""});
+  const pid=currentHistory.patientId;
+  currentHistory={patientId:pid,proposalId:"",version:null,patientName:currentHistory.patientName,updatedAt:""};
+  historyPricingLock=null;historyComponentPricingLock=null;historyDirty=false;historyRenderCurrent();
+  await loadHistoryProposals(pid);await refreshHistoryPatients();
+ }catch(e){
+  if(String(e.message||"").startsWith("CONFLICT:")){
+   const msg="Esta versão foi modificada em outro dispositivo. Reabra a versão atualizada antes de arquivá-la.";
+   historyShowError(msg);alert(msg);
+  }else historyShowError(e.message);
+ }finally{historySetBusy(false);historyRefreshButtons();}
 }
 function recalcHistoryPricing(){historyUnlockPricing();historyDirty=true;update();historyRenderCurrent();}
 
+const DEFAULTS_EXCLUDED_IDS=new Set(["legalQuestionnaire","patient","coverName","budgetDate","surgeryDate","otherProcedure","externalDescription"]);
+function defaultsFieldExcluded(el){return !el || !el.id || DEFAULTS_EXCLUDED_IDS.has(el.id) || el.id.startsWith("history");}
 function saveDefaults(){
  const data={};
  document.querySelectorAll(".admin input,.admin select,.admin textarea").forEach(el=>{
-  if(el.id==="legalQuestionnaire" || el.id?.startsWith("history")) return;
+  if(defaultsFieldExcluded(el)) return;
   if(el.type==="radio"){
    if(el.checked) data["radio:"+el.name]=el.value;
   }else if(el.type==="checkbox") data[el.id]=el.checked;
@@ -2727,6 +2791,7 @@ function loadDefaults(){
  const data=JSON.parse(localStorage.getItem("planoCirurgicoV17")||"null");
  if(!data) return alert("Nenhum padrão salvo.");
  Object.entries(data).forEach(([k,v])=>{
+  if(!k.startsWith("radio:") && DEFAULTS_EXCLUDED_IDS.has(k))return;
   if(k.startsWith("radio:")){
    const el=document.querySelector(`input[name="${k.slice(6)}"][value="${CSS.escape(v)}"]`); if(el) el.checked=true;
   }else{
@@ -2735,6 +2800,7 @@ function loadDefaults(){
   }
  });
  try{restoreCustomGarments(JSON.parse(localStorage.getItem("planoCirurgicoCustomGarmentsV1")||"[]"));}catch(e){restoreCustomGarments([]);}
+ historyUnlockPricing();historyUnlockAllComponentPricing();
  markHistoryDirty();
  update();
 }
@@ -2747,7 +2813,7 @@ function newPatient(){
  document.getElementById("legalQuestionnaire").value="";
  document.querySelectorAll(".procedureCheck").forEach(x=>x.checked=false);
  currentHistory={patientId:"",proposalId:"",version:null,patientName:"",updatedAt:""};
- historyPricingLock=null;historyDirty=false;historyRenderCurrent();
+ historyPricingLock=null;historyComponentPricingLock=null;historyDirty=false;historyRenderCurrent();
  window.scrollTo({top:0,behavior:"smooth"});
  update();
 }
@@ -2954,6 +3020,15 @@ function previewGeneratedPdf(){
  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
+function validateProposalInputs(){
+ const patient=(document.getElementById("patient").value||"").trim();
+ if(!patient)return "Informe o nome da paciente antes de salvar ou gerar a proposta.";
+ if(!selectedProcedures().length)return "Selecione ou informe ao menos um procedimento antes de salvar ou gerar a proposta.";
+ if(checked("useImplant") && !document.querySelector('input[name="implant"]:checked'))return "Prótese ativada sem modelo selecionado. Selecione uma prótese ou desative essa opção.";
+ if(checked("useTech") && !document.querySelector('input[name="tech"]:checked'))return "Tecnologia ativada sem opção selecionada. Selecione a tecnologia ou desative essa opção.";
+ return validateAutomaticHospitalPricing();
+}
+
 function validateAutomaticHospitalPricing(){
  const hospital=document.getElementById("hospital").value;
  if(hospital==="Hospital Pietà" && checked("usePietaAuto")){
@@ -2976,10 +3051,10 @@ async function generatePdfDirect(){
  status.textContent="Preparando páginas...";
  try{
    update();
-   const pricingError=validateAutomaticHospitalPricing();
-   if(pricingError){
-     status.textContent=pricingError;
-     alert(pricingError);
+   const validationError=validateProposalInputs();
+   if(validationError){
+     status.textContent=validationError;
+     alert(validationError);
      return;
    }
    updatePageSizes();
@@ -3104,9 +3179,9 @@ function buildLegalSummary(){
  add("Procedimento(s)",procs.length?procs.join(" + "):"A definir");add("Data do orçamento",formatLongDateBR(budgetDate));add("Data prevista da cirurgia",formatLongDateBR(surgeryDate));add("Hospital",hospName||"Não informado");
  if(C.implant.value>0)add("Prótese mamária",`${C.implant.name} — ${BRL(C.implant.value)}`);if(C.tech.value>0)add("Tecnologia",`${C.tech.name} — ${BRL(C.tech.value)}`);if(C.glue>0)add("Cola cirúrgica",`${Math.max(1,num("glueQty"))} un. — ${BRL(C.glue)}`);
  if(garmentLines.length)add("Modeladores pós-operatórios",`${document.getElementById("garmentMode").value==="budget"?"incluídos no orçamento":"aquisição pela paciente"}: ${garmentLines.join("; ")}`);if(C.special>0)add("Materiais especiais",BRL(C.special));if(checked("useExternalTreatment")&&document.getElementById("externalDescription").value.trim())add("Tratamento externo complementar",`${document.getElementById("externalDescription").value.trim()} — não incluído no orçamento`);
- lines.push("","4. COMPOSIÇÃO DO ORÇAMENTO");add("Honorários médicos",BRL(C.fees));if(C.assistant>0)add("Cirurgião auxiliar",BRL(C.assistant));if(C.instrument>0)add("Instrumentação",BRL(C.instrument));add("Hospital",BRL(C.hospital));add("Anestesia + consulta pré-anestésica",BRL(C.anesthesia));if(C.implant.value>0)add(`Prótese — ${C.implant.name}`,BRL(C.implant.value));if(C.tech.value>0)add(`Tecnologia — ${C.tech.name}`,BRL(C.tech.value));if(C.glue>0)add("Cola cirúrgica",BRL(C.glue));if(C.garmentsTotal>0)add("Modeladores incluídos",BRL(C.garmentsTotal));if(C.special>0)add("Materiais especiais",BRL(C.special));if(C.insurance>0)add("Seguro / assistência cirúrgica",BRL(C.insurance));add("Gestão e documentação",BRL(C.docs));
+ lines.push("","4. COMPOSIÇÃO DO ORÇAMENTO");add("Honorários médicos",BRL(C.fees));if(C.assistant>0)add("Cirurgião auxiliar",BRL(C.assistant));if(C.instrument>0)add("Instrumentação",BRL(C.instrument));add("Hospital",BRL(C.hospital));add(anesthesiaCompositionLabel(),BRL(C.anesthesia));if(C.implant.value>0)add(`Prótese — ${C.implant.name}`,BRL(C.implant.value));if(C.tech.value>0)add(`Tecnologia — ${C.tech.name}`,BRL(C.tech.value));if(C.glue>0)add("Cola cirúrgica",BRL(C.glue));if(C.garmentsTotal>0)add("Modeladores incluídos",BRL(C.garmentsTotal));if(C.special>0)add("Materiais especiais",BRL(C.special));if(C.insurance>0)add("Seguro / assistência cirúrgica",BRL(C.insurance));add("Gestão e documentação",BRL(C.docs));
  lines.push("","5. CONDIÇÕES FINANCEIRAS");add("Investimento total",BRL(C.total));add("Pagamento total junto ao médico",BRL(C.teamPayment));add("Sinal para confirmação da cirurgia",C.signalMode==="custom"?`${BRL(C.signal)} — valor de entrada definido manualmente`:`${BRL(C.signal)} — 20% dos honorários médicos`);add("Restante junto ao médico",`${BRL(C.teamBalance)} — até 10 dias antes da cirurgia`);lines.push("Parcelamento no cartão: acrescer taxa da maquininha, cotada no momento do agendamento.","Proposta válida por 15 dias; data da cirurgia sujeita à confirmação.","","6. PAGAMENTOS REALIZADOS SEPARADAMENTE");
- if(C.hospital>0)lines.push(`- ${hospName||"Hospital"}: ${BRL(C.hospital)}`);if(C.anesthesia>0)lines.push(`- Anestesista + consulta pré-anestésica: ${BRL(C.anesthesia)}`);if(C.implant.value>0)lines.push(`- ${C.implant.name}: ${BRL(C.implant.value)}`);if(C.tech.value>0)lines.push(`- ${C.tech.name}: ${BRL(C.tech.value)}`);lines.push(`- Gestão e documentação: ${BRL(C.docs)}`);
+ if(C.hospital>0)lines.push(`- ${hospName||"Hospital"}: ${BRL(C.hospital)}`);if(C.anesthesia>0)lines.push(`- ${anesthesiaPaymentLabel()}: ${BRL(C.anesthesia)}`);if(C.implant.value>0)lines.push(`- ${C.implant.name}: ${BRL(C.implant.value)}`);if(C.tech.value>0)lines.push(`- ${C.tech.name}: ${BRL(C.tech.value)}`);lines.push(`- Gestão e documentação: ${BRL(C.docs)}`);
  lines.push("","7. ITENS INCLUÍDOS / NÃO INCLUÍDOS","Incluídos: acompanhamento com médica nutróloga; retorno pré e pós-operatório; curativos em consultório.");
  const notIncluded=["exames e medicamentos","drenagem linfática e terapias externas"];if(garmentLines.length&&document.getElementById("garmentMode").value==="outside")notIncluded.push("modeladores pós-operatórios (aquisição pela paciente)");if(checked("useExternalTreatment")&&document.getElementById("externalDescription").value.trim())notIncluded.push(`${document.getElementById("externalDescription").value.trim()} (serviço externo)`);lines.push(`Não incluídos: ${notIncluded.join("; ")}.`);
  if(warnings.length){lines.push("","8. PONTOS PARA CONFERÊNCIA ANTES DA ELABORAÇÃO DOS DOCUMENTOS");warnings.forEach(w=>lines.push(`- ${w}`));}
@@ -3140,16 +3215,25 @@ renderTech();
 renderGarments();
 setToday();
 
+function enforceNumericMinimum(el){
+ if(!el || el.type!=="number" || el.value==="" || el.min==="")return;
+ const v=Number(el.value),min=Number(el.min);
+ if(Number.isFinite(v)&&Number.isFinite(min)&&v<min)el.value=String(min);
+}
 document.addEventListener("input",e=>{
  if(!e.target.closest(".admin"))return;
  if(e.target.id?.startsWith("history")){if(e.target.id==="historySearch")renderHistoryPatients();return;}
+ enforceNumericMinimum(e.target);
  if(historyPricingRelevantTarget(e.target))historyUnlockPricing();
+ historyUnlockComponentPricingFor(e.target);
  markHistoryDirty();update();
 });
 document.addEventListener("change",e=>{
  if(!e.target.closest(".admin"))return;
  if(e.target.id?.startsWith("history"))return;
+ enforceNumericMinimum(e.target);
  if(historyPricingRelevantTarget(e.target))historyUnlockPricing();
+ historyUnlockComponentPricingFor(e.target);
  markHistoryDirty();update();
 });
 document.getElementById("printBtn").addEventListener("click",generatePdfDirect);
@@ -3212,7 +3296,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   });
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("./service-worker.js?v=65", {updateViaCache:"none"});
+      const reg = await navigator.serviceWorker.register("./service-worker.js?v=68", {updateViaCache:"none"});
       await reg.update();
     } catch (err) {
       console.warn("Service Worker não pôde ser registrado/atualizado:", err);

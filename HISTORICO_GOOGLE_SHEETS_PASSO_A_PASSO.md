@@ -1,6 +1,6 @@
 # Histórico de propostas — Google Sheets + Apps Script
 
-Esta pasta deixa a versão v67 praticamente pronta. O gerador continua hospedado no Render. O Google Sheets funciona como banco de dados e o Apps Script como API intermediária.
+Esta pasta deixa a versão v68 praticamente pronta. O gerador continua hospedado no Render. O Google Sheets funciona como banco de dados e o Apps Script como API intermediária.
 
 ## O que é salvo
 
@@ -54,9 +54,9 @@ Os pedaços do snapshot ficam em colunas ocultas da aba `Propostas`. Não apague
 
 > O acesso público ao endpoint é protegido adicionalmente pelo token. O token não fica embutido no `index.html`; ele é informado uma vez no seu navegador e fica no localStorage daquele aparelho.
 
-## 5. Configurar o gerador v67
+## 5. Configurar o gerador v68
 
-1. Atualize o seu repositório/Render com a pasta `Plano_Cirurgico_PWA_v67`.
+1. Atualize o seu repositório/Render com a pasta `Plano_Cirurgico_PWA_v68`.
 2. Abra o gerador.
 3. No topo, abra **0. Histórico de propostas**.
 4. Abra **Configurar conexão com Google Sheets**.
@@ -98,9 +98,9 @@ Repita somente a configuração de URL/token em cada aparelho/navegador que voc�
 2. Selecione a versão.
 3. Clique **Abrir versão**.
 
-O gerador preserva os valores finais de hospital/anestesia gravados naquela versão. Isso evita que uma tabela hospitalar futura altere silenciosamente um orçamento antigo.
+O gerador preserva os valores financeiros calculados gravados naquela versão — incluindo hospital/anestesia e componentes cujo preço fica no código, como prótese, tecnologia, cola, materiais especiais, gestão/documentação e sinal. Isso evita que uma atualização futura de tabelas ou constantes altere silenciosamente um orçamento antigo.
 
-Se quiser aplicar as tabelas atuais, clique **Recalcular hospital/anestesia**.
+Se quiser aplicar as tabelas hospitalares atuais, clique **Recalcular hospital/anestesia**. Para os demais componentes, alterar o campo correspondente libera apenas aquele item para novo cálculo.
 
 ### Arquivar
 
@@ -148,6 +148,10 @@ Antes de usar com propostas reais:
 Se você abrir uma proposta antiga e apenas corrigir o nome da mesma paciente, use **Salvar alterações**. Se mudar o nome e usar **Salvar como nova versão**, o aplicativo evita anexar automaticamente a nova versão ao cadastro anterior quando o nome não coincide.
 
 
-## Atualização para v67
+## Atualização para v68
 
-A v67 adiciona proteção contra sobrescrita quando a mesma proposta é editada em outro dispositivo. Como essa proteção depende do Apps Script, substitua também o conteúdo do `Code.gs` pelo arquivo desta versão e, no Apps Script, abra **Implantar > Gerenciar implantações > Editar**, escolha **Nova versão** e publique novamente. A URL `/exec` da implantação pode permanecer a mesma. Não é necessário alterar a estrutura da planilha.
+A v68 mantém e amplia a proteção contra conflitos quando a mesma proposta é usada em mais de um dispositivo, incluindo o arquivamento. Como essa proteção depende do Apps Script, substitua também o conteúdo do `Code.gs` pelo arquivo desta versão e, no Apps Script, abra **Implantar > Gerenciar implantações > Editar**, escolha **Nova versão** e publique novamente. A URL `/exec` da implantação pode permanecer a mesma. Não é necessário alterar a estrutura da planilha.
+
+
+### Importante na atualização para v68
+Substitua também o `Code.gs` e publique **Nova versão** da implantação do Apps Script. A estrutura das abas não muda, a URL `/exec` pode permanecer a mesma e o token atual continua válido.

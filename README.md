@@ -1,4 +1,4 @@
-# Plano Cirúrgico PWA — v67
+# Plano Cirúrgico PWA — v68
 
 Versão com cálculo automático do Hospital Pietà por procedimento.
 
@@ -27,10 +27,10 @@ Pacote pronto para publicar como **Static Site** no Render.
 - Publish Directory: `.`
 
 ## Privacidade
-O projeto é estático e não inclui backend/banco de dados. Os dados preenchidos permanecem no navegador.
-O campo do questionário jurídico foi mantido fora de “Salvar padrões”.
-A URL do Static Site continua acessível para quem a conhecer. `robots.txt` e `noindex`
-reduzem indexação, mas não são autenticação.
+O PWA continua sendo um site estático no Render, mas o **histórico opcional** usa Google Sheets como armazenamento e Google Apps Script como API intermediária.
+O snapshot enviado ao histórico contém os dados necessários para reconstruir a proposta; o campo do questionário clínico/jurídico permanece excluído do histórico e de “Salvar padrões”.
+A URL e o token do Apps Script são configurados localmente em cada navegador e o token não deve ser colocado no GitHub.
+A URL do Static Site continua acessível para quem a conhecer. `robots.txt` e `noindex` reduzem indexação, mas não são autenticação. O token protege a API do histórico, não o acesso visual ao PWA.
 
 
 ## Alterações da v55
@@ -91,3 +91,16 @@ Esta versão adiciona o painel de histórico. A conexão fica desativada até co
 Veja `HISTORICO_GOOGLE_SHEETS_PASSO_A_PASSO.md` e a pasta `google-apps-script/`.
 
 O questionário clínico usado no resumo jurídico NÃO é incluído no snapshot enviado ao histórico.
+
+
+## v68 — auditoria final de código, histórico e cálculos
+- Corrigido o registro do Service Worker para a mesma versão do app/cache.
+- Remoção de procedimentos e modeladores adicionais agora marca corretamente a proposta como alterada.
+- Botões do histórico ficam realmente bloqueados durante operações assíncronas, reduzindo risco de versões duplicadas por duplo toque.
+- Histórico passa a preservar também valores calculados de prótese, tecnologia, cola, materiais especiais, gestão/documentação e sinal; alterar um campo relacionado libera apenas o componente correspondente para recálculo.
+- Arquivamento recebeu a mesma proteção contra conflito entre Mac/iPhone já usada na sobrescrita.
+- O Apps Script não sobrescreve mais cabeçalhos de uma planilha com dados se detectar estrutura inesperada; ele interrompe com aviso para evitar desalinhamento de colunas.
+- Entradas numéricas respeitam seus mínimos e valores monetários são protegidos contra números negativos.
+- PDF e histórico validam nome, procedimento e seleção de prótese/tecnologia antes de salvar.
+- No Firenze sem consulta adicional, a proposta e o resumo jurídico exibem apenas “Anestesista/Anestesia”.
+- “Salvar padrões” não armazena mais nome, datas ou outros campos específicos da paciente; dados antigos desses campos também são ignorados ao carregar padrões.

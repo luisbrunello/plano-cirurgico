@@ -241,6 +241,12 @@ function archiveProposal_(body) {
   const qs = ss.getSheetByName(PROPOSALS_SHEET);
   const found = findRowById_(qs, PROPOSAL_HEADERS, 'proposal_id', proposalId);
   if (!found) throw new Error('Proposta não encontrada.');
+  if (truthy_(found.obj.arquivado)) throw new Error('Esta proposta já está arquivada.');
+  const expectedUpdatedAt = String(body.expectedUpdatedAt || '').trim();
+  const currentUpdatedAt = iso_(found.obj.atualizado_em || found.obj.criado_em);
+  if (expectedUpdatedAt && currentUpdatedAt && expectedUpdatedAt !== currentUpdatedAt) {
+    throw new Error('CONFLICT:Esta proposta foi modificada em outro dispositivo após ser aberta.');
+  }
   writeObjectUpdates_(qs, found.row, PROPOSAL_HEADERS, {arquivado:true, status:'arquivada', atualizado_em:new Date()});
   return {proposalId};
 }
@@ -326,6 +332,9 @@ function ensureSheet_(ss, name, headers) {
   if (sh.getLastRow() === 0) sh.getRange(1,1,1,headers.length).setValues([headers]);
   const current = sh.getRange(1,1,1,headers.length).getValues()[0].map(String);
   if (current.join('|') !== headers.join('|')) {
+    // Não sobrescreve silenciosamente cabeçalhos de uma base que já contém dados.
+    // Isso evita desalinhamento/corrupção caso a estrutura da planilha seja alterada manualmente.
+    if (sh.getLastRow() > 1) throw new Error('Estrutura inesperada na aba "' + name + '". Não altere os cabeçalhos; restaure a estrutura antes de executar o setup.');
     sh.getRange(1,1,1,headers.length).setValues([headers]);
   }
   return sh;
